@@ -9,10 +9,11 @@ char fname[50] = "trace_";
 //char **interested;
 FILE *fp;
 //FILE *ifp;
-enum opType = {LS = 1, SYN = 2, RMA = 3};
+enum opType {LS = 1, SYN = 2, RMA = 3};
 enum opType lastOp;
 int rank;
 int size;
+MPI_Group startGroup, postGroup;
 extern int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype
             origin_datatype, int target_rank, MPI_Aint target_disp,
             int target_count, MPI_Datatype target_datatype, MPI_Win
@@ -25,7 +26,7 @@ extern int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatyp
                    origin_datatype, int target_rank, MPI_Aint
                    target_disp, int target_count, MPI_Datatype
                    target_datatype, MPI_Op op, MPI_Win win);
-extern int int MPI_Init( int *argc, char ***argv );
+extern int MPI_Init( int *argc, char ***argv );
 extern int MPI_Finalize( void );
 extern int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info, 
                   MPI_Comm comm, MPI_Win *win);
