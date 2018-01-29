@@ -29,6 +29,7 @@ int MPI_Init( int *argc, char ***argv ){
 	char srank[50];
 	sprintf(srank, "%d", rank);
 	strcat(fname,srank);
+	printf("name: %s",fname);
 	fp = fopen(fname,"w");
 	/*
 	ifp = fopen("interested.txt","r");
