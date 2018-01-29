@@ -11,13 +11,13 @@ void printClock(int a[]){
 
 void tracels(bool isLoad, void *var_add){
 	if (isLoad){
-		clock[rank] = clock[rank] + 1;
+		clock[pmpi_rank] = clock[pmpi_rank] + 1;
 		printClock(clock);
 		fprintf("/tLoad/t%p",var_add);
 		lastOp = LS;
 	} 
 	else {
-		clock[rank] = clock[rank] + 1;
+		clock[pmpi_rank] = clock[pmpi_rank] + 1;
 		printClock(clock);
 		fprintf("/tStore/t%p",var_add);
 		lastOp = LS;
@@ -25,9 +25,9 @@ void tracels(bool isLoad, void *var_add){
 }
 
 int MPI_Init( int *argc, char ***argv ){
-	PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	PMPI_Comm_rank(MPI_COMM_WORLD, &pmpi_rank);
 	char srank[50];
-	sprintf(srank, "%d", rank);
+	sprintf(srank, "%d", pmpi_rank);
 	strcat(fname,srank);
 	printf("name: %s",fname);
 	fp = fopen(fname,"w");
@@ -69,7 +69,7 @@ int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype
 	}
 	else {
 		lastOp = RMA;
-		clock[rank] = clock[rank] + 1;
+		clock[pmpi_rank] = clock[pmpi_rank] + 1;
 		printClock(clock);
 		fprintf(fp,"\tPut\torigin_addr\torigin_count\ttarget_rank\ttarget_disp\ttarget_count\n");
 	}
@@ -88,7 +88,7 @@ int MPI_Get(void *origin_addr, int origin_count, MPI_Datatype
 	}
 	else {
 		lastOp = RMA;
-		clock[rank] = clock[rank] + 1;
+		clock[pmpi_rank] = clock[pmpi_rank] + 1;
 		printClock(clock);
 		fprintf(fp,"\tGet\torigin_addr\torigin_count\ttarget_rank\ttarget_disp\ttarget_count\n");
 	}
@@ -105,7 +105,7 @@ int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatype
 	}
 	else {
 		lastOp = RMA;
-		clock[rank] = clock[rank] + 1;
+		clock[pmpi_rank] = clock[pmpi_rank] + 1;
 		printClock(clock);
 		fprintf(fp,"\tAccumulate\torigin_addr\torigin_count\ttarget_rank\ttarget_disp\ttarget_count\n");
 	}
@@ -117,16 +117,16 @@ int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatype
 				  }*/
 int MPI_Win_fence(int assert, MPI_Win win){
 					lastOp = SYN;
-					clock[rank] = clock[rank] + 1;
+					clock[pmpi_rank] = clock[pmpi_rank] + 1;
 					printClock(clock);
 					fprintf(fp,"\tFence");
-					MPI_Allgather(&clock[rank], 1, MPI_INT, 
+					MPI_Allgather(&clock[pmpi_rank], 1, MPI_INT, 
                            clock, size, MPI_INT, MPI_COMM_WORLD);
 					return PMPI_Win_fence(assert, win);
 				  }
 int MPI_Win_post(MPI_Group group,int assert,MPI_Win win){
 					lastOp = SYN;
-					clock[rank] = clock[rank] + 1;
+					clock[pmpi_rank] = clock[pmpi_rank] + 1;
 					printClock(clock);
 					fprintf(fp,"\tPost");
 					//get group members and send clock from each member
@@ -147,7 +147,7 @@ int MPI_Win_post(MPI_Group group,int assert,MPI_Win win){
 				  }
 int MPI_Win_start(MPI_Group group,int assert,MPI_Win win){
 					lastOp = SYN;
-					clock[rank] = clock[rank] + 1;
+					clock[pmpi_rank] = clock[pmpi_rank] + 1;
 					printClock(clock);
 					fprintf(fp,"\tStart");
 					startGroup = group;
@@ -172,7 +172,7 @@ int MPI_Win_start(MPI_Group group,int assert,MPI_Win win){
 				  }
 int MPI_Win_complete(MPI_Win win){
 					lastOp = SYN;
-					clock[rank] = clock[rank] + 1;
+					clock[pmpi_rank] = clock[pmpi_rank] + 1;
 					printClock(clock);
 					fprintf(fp,"\tComplete");
 					//get group members and send clock from each member
@@ -192,7 +192,7 @@ int MPI_Win_complete(MPI_Win win){
 				  }
 int MPI_Win_wait(MPI_Win win){
 					lastOp = SYN;
-					clock[rank] = clock[rank] + 1;
+					clock[pmpi_rank] = clock[pmpi_rank] + 1;
 					printClock(clock);
 					fprintf(fp,"\tWait");
 					//get group members and receive clock to each member
@@ -216,28 +216,28 @@ int MPI_Win_wait(MPI_Win win){
 				  }
 int MPI_Win_lock(int lock_type, int rank, int assert, MPI_Win win){
 					lastOp = SYN;
-					clock[rank] = clock[rank] + 1;
+					clock[pmpi_rank] = clock[pmpi_rank] + 1;
 					printClock(clock);
 					fprintf(fp,"\tLock");
 					return PMPI_Win_lock(lock_type, rank, assert, win);
 				  }
 int MPI_Win_lock_all(int assert, MPI_Win win){
 					lastOp = SYN;
-					clock[rank] = clock[rank] + 1;
+					clock[pmpi_rank] = clock[pmpi_rank] + 1;
 					printClock(clock);
 					fprintf(fp,"\tLockAll");
 					return PMPI_Win_lock_all(assert,win);
 				  }
 int MPI_Win_unlock(int rank, MPI_Win win){
 					lastOp = SYN;
-					clock[rank] = clock[rank] + 1;
+					clock[pmpi_rank] = clock[pmpi_rank] + 1;
 					printClock(clock);
 					fprintf(fp,"\tUnlock");
 					return PMPI_Win_unlock(win);
 				  }
 int MPI_Win_unlock_all(MPI_Win win){
 					lastOp = SYN;
-					clock[rank] = clock[rank] + 1;
+					clock[pmpi_rank] = clock[pmpi_rank] + 1;
 					printClock(clock);
 					fprintf(fp,"\tUnlockAll");
 					return PMPI_Win_unlock_all(win);
