@@ -6,7 +6,9 @@
 #include <string.h>
 int *clock;
 char fname[50] = "trace_";
+//char **interested;
 FILE *fp;
+//FILE *ifp;
 enum opType = {LS = 1, SYN = 2, RMA = 3};
 enum opType lastOp;
 int rank;
