@@ -5,7 +5,7 @@ lib = pmpi.c
 $(program) : $(src)
 	mpicc $(src) -o $(program)
 
-.PHONY : run clean
+.PHONY : run debug clean
 run : $(program)
 	mpirun -np 3 --oversubscribe $(program)
 
