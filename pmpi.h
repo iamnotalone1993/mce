@@ -11,8 +11,6 @@ FILE *fp;
 //FILE *ifp;
 enum opType {LS = 1, SYN = 2, RMA = 3};
 enum opType lastOp;
-int rank;
-int size;
 MPI_Group startGroup, postGroup;
 extern int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype
             origin_datatype, int target_rank, MPI_Aint target_disp,
