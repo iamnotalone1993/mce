@@ -1,4 +1,4 @@
-#include "pmpi.h"
+#include "mpi.h"
 #include <stdio.h>
 
 int main(int argc, char **argv)
@@ -14,7 +14,6 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
 
-	int n = 3;
 	const int ranks[3] = {0, 1, 2};
 
 	MPI_Win_create(&sharedBuffer, 1, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &win);

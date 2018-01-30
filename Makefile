@@ -1,16 +1,23 @@
 src = example.c
 program = example
 lib = pmpi.c
+obj = pmpi.o
 
-$(program) : $(src)
-	mpicc $(src) -o $(program)
+$(obj) : $(lib)
+	mpicc -c $^
+
+lib.a : $(obj)
+	ar -cr $@ $^
 
 .PHONY : run debug clean
+#type "make all" to compile
+all : $(src) lib.a
+	mpicc -Wall $^ -o $(program)
+
+#type "make run" to run
 run : $(program)
 	mpirun -np 3 --oversubscribe $(program)
 
-debug : $(lib)
-	mpicc -Wall -I./inc -g -c $(lib)
-
+#type "make clean" to clean
 clean:
-	rm $(program)
+	rm -f $(obj) lib.a $(program)
