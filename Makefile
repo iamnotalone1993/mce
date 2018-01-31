@@ -20,4 +20,4 @@ run : $(program)
 
 #type "make clean" to clean
 clean:
-	rm -f $(obj) lib.a $(program)
+	rm -f $(obj) lib.a $(program) trace*

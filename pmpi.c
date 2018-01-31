@@ -1,11 +1,13 @@
 #include "pmpi.h"
 #define getVarName(var) #var
 
-void printClock(int *a){
+void printClock(int *a)
+{
 	int size;
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	fprintf(fp,"[");
-	for (int i = 0; i < size - 1; i++){
+	fprintf(fp, "[");
+	for (int i = 0; i < size; i++)
+	{
 		fprintf(fp, "%d,", a[i]);
 	}
 	fprintf(fp, "%d]", a[size-1]);
@@ -33,36 +35,21 @@ void tracels(bool isLoad, void *var_add)
 
 int MPI_Init(int *argc, char ***argv)
 {
-	printf("DEBUG2\n");
-	int rank, size;
+	int rank, size, result, i;
+	result = PMPI_Init(argc, argv);
+	PMPI_Comm_size(MPI_COMM_WORLD, &size);
 	PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	char srank[50];
 	sprintf(srank, "%d", rank);
-	strcat(fname,srank);
-	printf("name: %s", fname);
-	fp = fopen(fname,"w");
-	/*
-	ifp = fopen("interested.txt","r");
-	int n;
-	char line [ 128 ];
-	fgets ( line, sizeof line, ifp );
-	n = atoi(line);
-	interested = malloc(n * sizeof(char*));
-	for (int i =0; i< n; i++){
-	   interested[i] = malloc(128);
-	}
-	int i = 0;
-	while ( fgets ( line, sizeof line, ifp ) != NULL )
-    {
-		line[strcspn(line, "\r\n")] = 0;
-		strcpy(interested[i],line);
-		i++;
-    }
-	*/
+	strcat(fname, srank);
+	fp = fopen(fname, "w");
 	PMPI_Comm_size(MPI_COMM_WORLD, &size);
 	clock = (int*) malloc(size);
-	for (int i=0; i < size; i++) clock[i] = 0;
-	return PMPI_Init(argc, argv);	
+	for (i = 0; i < size; i++) 
+	{
+		clock[i] = 0;
+	}
+	return result;	
 }
 
 int MPI_Finalize()
@@ -72,12 +59,18 @@ int MPI_Finalize()
 	return PMPI_Finalize();
 }
 
+int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, MPI_Win *win)
+{
+	return PMPI_Win_create(base, size, disp_unit, info, comm, win);
+}
+
 int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank,
 				MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win)
-{
+{	/*
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	if (lastOp == RMA){
+	if (lastOp == RMA)
+	{
 		printClock(clock);
 		fprintf(fp,"\tPut\torigin_addr\torigin_count\ttarget_rank\ttarget_disp\ttarget_count\n");
 	}
@@ -87,15 +80,15 @@ int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype origin_datat
 		printClock(clock);
 		fprintf(fp,"\tPut\torigin_addr\torigin_count\ttarget_rank\ttarget_disp\ttarget_count\n");
 	}
-	
-	return PMPI_Put(origin_addr, origin_count,
-            origin_datatype, target_rank, target_disp,
-            target_count, target_datatype, win);
+	/**/
+	return PMPI_Put(origin_addr, origin_count, origin_datatype, target_rank, target_disp, target_count, 
+				target_datatype, win);
 }
 
 int MPI_Get(void *origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank, 
-				MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win)
+			MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win)
 {
+	/*
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	if (lastOp == RMA){
@@ -108,6 +101,7 @@ int MPI_Get(void *origin_addr, int origin_count, MPI_Datatype origin_datatype, i
 		printClock(clock);
 		fprintf(fp,"\tGet\torigin_addr\torigin_count\ttarget_rank\ttarget_disp\ttarget_count\n");
 	}
+	/**/
 	return PMPI_Get(origin_addr, origin_count, origin_datatype, target_rank, target_disp,
              target_count, target_datatype, win);
 }
@@ -140,7 +134,7 @@ int MPI_Win_fence(int assert, MPI_Win win)
 	clock[rank] = clock[rank] + 1;
 	printClock(clock);
 	fprintf(fp,"\tFence");
-	MPI_Allgather(&clock[rank], 1, MPI_INT, clock, size, MPI_INT, MPI_COMM_WORLD);
+	MPI_Allgather(clock + rank, 1, MPI_INT, clock, 1, MPI_INT, MPI_COMM_WORLD);
 	return PMPI_Win_fence(assert, win);
 }
 

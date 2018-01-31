@@ -7,9 +7,7 @@ int main(int argc, char **argv)
 	MPI_Win win;
 	MPI_Group worldGroup, primeGroup;
 
-	printf("DEBUG1\n");
 	MPI_Init(&argc, &argv);
-	printf("DEBUG3\n");
 	MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
@@ -18,34 +16,31 @@ int main(int argc, char **argv)
 
 	MPI_Win_create(&sharedBuffer, 1, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
 	sharedBuffer = rank;
-	
+
 	MPI_Win_fence(0, win);
 	if (rank == 0)
 	{	
-		printf("rank = %d\n",rank);
 		localBuffer = 5;
 		MPI_Put(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
 		sharedBuffer = 3;
 	}
 	else if (rank == 1)
 	{
-		printf("rank = %d\n",rank);
 		localBuffer = 4;
 		MPI_Put(&localBuffer, 1, MPI_INT, 2, 0, 1, MPI_INT, win);
 	}
 	else if (rank == 2)
 	{
-		printf("rank = %d\n",rank);
 		localBuffer = 3;
 		MPI_Put(&localBuffer, 1, MPI_INT, 0, 0, 1, MPI_INT, win);
 	}
 	else //if (rank > 2)
 	{
-		printf("rank = %d\n",rank);
 		//do nothing
 	}
 	MPI_Win_fence(0, win);
 	
+	/*
 	if (rank == 0)
 	{
 		printf("rank = %d\n",rank);
@@ -97,6 +92,7 @@ int main(int argc, char **argv)
 		printf("rank = %d\n",rank);
 		//do nothing
 	}
+	/**/
 
 	MPI_Finalize();
 	return 0;
