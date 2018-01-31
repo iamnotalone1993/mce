@@ -3,10 +3,10 @@
 
 void printClock(int *a)
 {
-	int size;
+	int size, i;
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	fprintf(fp, "[");
-	for (int i = 0; i < size; i++)
+	for (i = 0; i < size; i++)
 	{
 		fprintf(fp, "%d,", a[i]);
 	}
@@ -66,7 +66,7 @@ int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_
 
 int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank,
 				MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win)
-{	/*
+{	
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	if (lastOp == RMA)
@@ -80,7 +80,6 @@ int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype origin_datat
 		printClock(clock);
 		fprintf(fp,"\tPut\torigin_addr\torigin_count\ttarget_rank\ttarget_disp\ttarget_count\n");
 	}
-	/**/
 	return PMPI_Put(origin_addr, origin_count, origin_datatype, target_rank, target_disp, target_count, 
 				target_datatype, win);
 }
@@ -88,7 +87,6 @@ int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype origin_datat
 int MPI_Get(void *origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank, 
 			MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win)
 {
-	/*
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	if (lastOp == RMA){
@@ -101,7 +99,6 @@ int MPI_Get(void *origin_addr, int origin_count, MPI_Datatype origin_datatype, i
 		printClock(clock);
 		fprintf(fp,"\tGet\torigin_addr\torigin_count\ttarget_rank\ttarget_disp\ttarget_count\n");
 	}
-	/**/
 	return PMPI_Get(origin_addr, origin_count, origin_datatype, target_rank, target_disp,
              target_count, target_datatype, win);
 }
@@ -140,7 +137,7 @@ int MPI_Win_fence(int assert, MPI_Win win)
 
 int MPI_Win_post(MPI_Group group, int assert, MPI_Win win)
 {
-	int size, rank;
+	int size, rank, groupSize, i;
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
@@ -150,16 +147,15 @@ int MPI_Win_post(MPI_Group group, int assert, MPI_Win win)
 	//get group members and send clock from each member
 	MPI_Group worldGroup;
 	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
-	int groupSize;
 	MPI_Group_size(group, &groupSize);
 	int worldRanks[groupSize], groupRanks[groupSize];
-	for (int i = 0; i < groupSize; i++)
+	for (i = 0; i < groupSize; i++)
 	{
 		groupRanks[i] = i;
 	}
 	postGroup = group;
 	MPI_Group_translate_ranks(group, groupSize, groupRanks, worldGroup, worldRanks);
-	for (int i = 0; i < groupSize; i++)
+	for (i = 0; i < groupSize; i++)
 	{
 		MPI_Send(clock, size, MPI_INT, worldRanks[i], 0, MPI_COMM_WORLD);
 	}
@@ -168,7 +164,7 @@ int MPI_Win_post(MPI_Group group, int assert, MPI_Win win)
 
 int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
 {
-	int size, rank;
+	int size, rank, groupSize, i, j;
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
@@ -179,19 +175,18 @@ int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
 	//get group members and receive clock to each member
 	MPI_Group worldGroup;
 	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
-	int groupSize;
 	MPI_Group_size(group, &groupSize);
-	int worldRanks[groupSize],groupRanks[groupSize];
-	for (int i = 0; i < groupSize; i++)
+	int worldRanks[groupSize], groupRanks[groupSize];
+	for (i = 0; i < groupSize; i++)
 	{
 		groupRanks[i] = i;
 	}
 	int tmpClock[size];
 	MPI_Group_translate_ranks(group, groupSize, groupRanks, worldGroup, worldRanks);
-	for (int i = 0; i < groupSize; i++)
+	for (i = 0; i < groupSize; i++)
 	{
 		MPI_Recv(tmpClock, size, MPI_INT, worldRanks[i], 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		for (int j = 0; j < size; j++)
+		for (j = 0; j < size; j++)
 		{
 			if (tmpClock[j] > clock[j]) clock[j] = tmpClock[j];
 		}
@@ -201,7 +196,8 @@ int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
 
 int MPI_Win_complete(MPI_Win win)
 {
-	int size, rank;
+	int size, rank, groupSize, i;
+	MPI_Group worldGroup;
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
@@ -209,17 +205,15 @@ int MPI_Win_complete(MPI_Win win)
 	printClock(clock);
 	fprintf(fp,"\tComplete");
 	//get group members and send clock from each member
-	MPI_Group worldGroup;
 	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
-	int groupSize;
 	MPI_Group_size(startGroup, &groupSize);
-	int worldRanks[groupSize],groupRanks[groupSize];
-	for (int i = 0; i < groupSize; i++)
+	int worldRanks[groupSize], groupRanks[groupSize];
+	for (i = 0; i < groupSize; i++)
 	{
 		groupRanks[i] = i;
 	}
 	MPI_Group_translate_ranks(startGroup, groupSize, groupRanks, worldGroup, worldRanks);
-	for (int i = 0; i < groupSize; i++)
+	for (i = 0; i < groupSize; i++)
 	{
 		MPI_Send(clock, size, MPI_INT, worldRanks[i], 0, MPI_COMM_WORLD);
 	}
@@ -228,7 +222,8 @@ int MPI_Win_complete(MPI_Win win)
 
 int MPI_Win_wait(MPI_Win win)
 {
-	int size, rank;
+	int size, rank, groupSize, i, j;
+	MPI_Group worldGroup;
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
@@ -236,21 +231,19 @@ int MPI_Win_wait(MPI_Win win)
 	printClock(clock);
 	fprintf(fp,"\tWait");
 	//get group members and receive clock to each member
-	MPI_Group worldGroup;
 	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
-	int groupSize;
 	MPI_Group_size(postGroup, &groupSize);
-	int worldRanks[groupSize],groupRanks[groupSize];
-	for (int i = 0; i < groupSize; i++)
+	int worldRanks[groupSize], groupRanks[groupSize];
+	for (i = 0; i < groupSize; i++)
 	{
 		groupRanks[i] = i;
 	}
 	int tmpClock[size];
 	MPI_Group_translate_ranks(postGroup, groupSize, groupRanks, worldGroup, worldRanks);
-	for (int i = 0; i < groupSize; i++)
+	for (i = 0; i < groupSize; i++)
 	{
 		MPI_Recv(tmpClock, size, MPI_INT, worldRanks[i], 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		for (int j = 0; j < size; j++)
+		for (j = 0; j < size; j++)
 		{
 			if (tmpClock[j] > clock[j]) clock[j] = tmpClock[j];
 		}

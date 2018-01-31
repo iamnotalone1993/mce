@@ -39,6 +39,7 @@ int main(int argc, char **argv)
 		//do nothing
 	}
 	MPI_Win_fence(0, win);
+	/**/
 	
 	if (rank == 0)
 	{
@@ -46,6 +47,7 @@ int main(int argc, char **argv)
 		localBuffer = 6;
 		MPI_Put(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
 		MPI_Win_unlock(1, win);
+		/**/
 
 		MPI_Group_incl(worldGroup, 1, ranks + 1, &primeGroup);
 		MPI_Win_start(primeGroup, 0, win);
@@ -53,11 +55,13 @@ int main(int argc, char **argv)
                 MPI_Put(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
 		sharedBuffer = 5;
 		MPI_Win_complete(win);
-
+		/**/
+		
 		MPI_Win_lock(MPI_LOCK_SHARED, 1, 0, win);
                 localBuffer = 7;
                 MPI_Put(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
                 MPI_Win_unlock(1, win);
+		/**/
 	}
 	else if (rank == 1)
 	{
@@ -65,23 +69,27 @@ int main(int argc, char **argv)
 		localBuffer = 6;
 		MPI_Put(&localBuffer, 1, MPI_INT, 0, 0, 1, MPI_INT, win);
 		MPI_Win_unlock(0, win);
+		/**/
 
         	MPI_Group_incl(worldGroup, 1, ranks, &primeGroup);
 		MPI_Win_post(primeGroup, 0, win);
 		sharedBuffer = 3;
 		MPI_Win_wait(win);
+		/**/
 
 		MPI_Win_lock(MPI_LOCK_SHARED, 0, 0, win);
                 localBuffer = 7;
                 MPI_Put(&localBuffer, 1, MPI_INT, 0, 0, 1, MPI_INT, win);
                 MPI_Win_unlock(0, win);
+		/**/
 	}
 	else if (rank == 2)
-	{
+	{	
 		MPI_Win_lock(MPI_LOCK_SHARED, 1, 0, win);
 		localBuffer = 4;
 		MPI_Put(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
 		MPI_Win_unlock(1, win);
+		/**/
 	}
 	else //if (rank > 2)
 	{
