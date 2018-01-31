@@ -8,36 +8,25 @@
 
 int *clock;
 char fname[50] = "trace_";
-//char **interested;
 FILE *fp;
-//FILE *ifp;
 enum opType {LS = 1, SYN = 2, RMA = 3};
 enum opType lastOp;
 MPI_Group startGroup, postGroup;
-extern int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype
-            origin_datatype, int target_rank, MPI_Aint target_disp,
-            int target_count, MPI_Datatype target_datatype, MPI_Win
-            win);
-extern int MPI_Get(void *origin_addr, int origin_count, MPI_Datatype
-            origin_datatype, int target_rank, MPI_Aint target_disp,
-            int target_count, MPI_Datatype target_datatype, MPI_Win
-            win);
-extern int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatype
-                   origin_datatype, int target_rank, MPI_Aint
-                   target_disp, int target_count, MPI_Datatype
-                   target_datatype, MPI_Op op, MPI_Win win);
-extern int MPI_Init( int *argc, char ***argv );
-extern int MPI_Finalize( void );
-extern int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info, 
-                  MPI_Comm comm, MPI_Win *win);
-extern int MPI_Win_fence(int assert, MPI_Win win);
-extern int MPI_Win_post(MPI_Group group,int assert,MPI_Win win);
-extern int MPI_Win_start(MPI_Group group,int assert,MPI_Win win);
-extern int MPI_Win_complete(MPI_Win win);
-extern int MPI_Win_wait(MPI_Win win);
-extern int MPI_Win_lock(int lock_type, int rank, int assert, MPI_Win win);
-extern int MPI_Win_lock_all(int assert, MPI_Win win);
-extern int MPI_Win_unlock(int rank, MPI_Win win);
-extern int MPI_Win_unlock_all(MPI_Win win);
+
+int MPI_Init(int *, char ***);
+int MPI_Finalize(void);
+int MPI_Win_create(void *, MPI_Aint, int, MPI_Info, MPI_Comm, MPI_Win *);
+int MPI_Put(const void *, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Win);
+int MPI_Get(void *, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Win);
+int MPI_Accumulate(const void *, int, MPI_Datatype, int, MPI_Aint, int, MPI_Datatype, MPI_Op, MPI_Win);
+int MPI_Win_fence(int, MPI_Win);
+int MPI_Win_post(MPI_Group, int, MPI_Win);
+int MPI_Win_start(MPI_Group, int, MPI_Win);
+int MPI_Win_complete(MPI_Win);
+int MPI_Win_wait(MPI_Win);
+int MPI_Win_lock(int, int, int, MPI_Win);
+int MPI_Win_lock_all(int, MPI_Win);
+int MPI_Win_unlock(int, MPI_Win);
+int MPI_Win_unlock_all(MPI_Win);
 
 #endif
