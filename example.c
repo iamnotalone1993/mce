@@ -15,8 +15,8 @@ int main(int argc, char **argv)
 
 	const int ranks[3] = {0, 1, 2};
 
-	MPI_Win_create(&sharedBuffer, 1, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
 	sharedBuffer = rank;
+	MPI_Win_create(&sharedBuffer, 1, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
 
 	MPI_Win_fence(0, win);
 	if (rank == 0)
@@ -24,7 +24,6 @@ int main(int argc, char **argv)
 		localBuffer = 5;
 		MPI_Put(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
 		sharedBuffer = 3;
-		tracels(false ,"sharedBuffer");
 	}
 	else if (rank == 1)
 	{
@@ -56,7 +55,6 @@ int main(int argc, char **argv)
 		localBuffer = 4;
                 MPI_Put(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
 		sharedBuffer = 5;
-		tracels(false, "sharedBuffer");
 		MPI_Win_complete(win);
 		/**/
 		
@@ -77,7 +75,6 @@ int main(int argc, char **argv)
         	MPI_Group_incl(worldGroup, 1, ranks, &primeGroup);
 		MPI_Win_post(primeGroup, 0, win);
 		sharedBuffer = 3;
-		tracels(false, "sharedBuffer");
 		MPI_Win_wait(win);
 		/**/
 
