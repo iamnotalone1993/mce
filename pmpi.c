@@ -177,8 +177,6 @@ int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
 	clock[rank] = clock[rank] + 1;
-	fprintf(fp, "Start");
-	printClock(clock);
 	startGroup = group;
 	//get group members and receive clock to each member
 	MPI_Group worldGroup;
@@ -199,6 +197,8 @@ int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
 			if (tmpClock[j] > clock[j]) clock[j] = tmpClock[j];
 		}
 	}
+	fprintf(fp, "Start");
+        printClock(clock);
 	return PMPI_Win_start(group, assert, win);
 }
 
@@ -236,8 +236,6 @@ int MPI_Win_wait(MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
 	clock[rank] = clock[rank] + 1;
-	fprintf(fp, "Wait");
-	printClock(clock);
 	//get group members and receive clock to each member
 	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
 	MPI_Group_size(postGroup, &groupSize);
@@ -256,6 +254,8 @@ int MPI_Win_wait(MPI_Win win)
 			if (tmpClock[j] > clock[j]) clock[j] = tmpClock[j];
 		}
 	}
+        fprintf(fp, "Wait");
+	printClock(clock);
 	return PMPI_Win_wait(win);
 }
 
