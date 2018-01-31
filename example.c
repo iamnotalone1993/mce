@@ -1,5 +1,6 @@
 #include "mpi.h"
 #include <stdio.h>
+#include <stdbool.h>
 
 int main(int argc, char **argv)
 {
@@ -23,6 +24,7 @@ int main(int argc, char **argv)
 		localBuffer = 5;
 		MPI_Put(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
 		sharedBuffer = 3;
+		tracels(false ,"sharedBuffer");
 	}
 	else if (rank == 1)
 	{
@@ -54,6 +56,7 @@ int main(int argc, char **argv)
 		localBuffer = 4;
                 MPI_Put(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
 		sharedBuffer = 5;
+		tracels(false, "sharedBuffer");
 		MPI_Win_complete(win);
 		/**/
 		
@@ -74,6 +77,7 @@ int main(int argc, char **argv)
         	MPI_Group_incl(worldGroup, 1, ranks, &primeGroup);
 		MPI_Win_post(primeGroup, 0, win);
 		sharedBuffer = 3;
+		tracels(false, "sharedBuffer");
 		MPI_Win_wait(win);
 		/**/
 

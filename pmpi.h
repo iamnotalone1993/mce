@@ -13,6 +13,9 @@ enum opType {LS = 1, SYN = 2, RMA = 3};
 enum opType lastOp;
 MPI_Group startGroup, postGroup;
 
+void printClock(int *);
+void tracels(bool, char *);
+
 int MPI_Init(int *, char ***);
 int MPI_Finalize(void);
 int MPI_Win_create(void *, MPI_Aint, int, MPI_Info, MPI_Comm, MPI_Win *);

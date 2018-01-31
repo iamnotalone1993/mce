@@ -6,31 +6,32 @@ void printClock(int *a)
 	int size, i;
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	fprintf(fp, "[");
-	for (i = 0; i < size; i++)
+	for (i = 0; i < size - 1; i++)
 	{
 		fprintf(fp, "%d,", a[i]);
 	}
-	fprintf(fp, "%d]", a[size-1]);
+	fprintf(fp, "%d]\n", a[size-1]);
 }
 
-void tracels(bool isLoad, void *var_add)
+void tracels(bool isLoad, char *varName)
 {
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	if (isLoad)
-	{
+	if (lastOp != RMA)
+        {
 		clock[rank] = clock[rank] + 1;
-		printClock(clock);
-		fprintf(fp, "/tLoad/t%p", var_add);
-		lastOp = LS;
+        }
+	else {}//if (lastOP == RMA) do nothing
+	if (isLoad == true)
+	{
+		fprintf(fp, "Load|%s", varName);
 	} 
-	else 
+	else //if (isLoad == false)
 	{
-		clock[rank] = clock[rank] + 1;
-		printClock(clock);
-		fprintf(fp, "/tStore/t%p", var_add);
-		lastOp = LS;
+		fprintf(fp, "Store|%s", varName);
 	}
+	printClock(clock);
+        lastOp = LS;
 }
 
 int MPI_Init(int *argc, char ***argv)
@@ -49,6 +50,8 @@ int MPI_Init(int *argc, char ***argv)
 	{
 		clock[i] = 0;
 	}
+	fprintf(fp, "Init");
+	printClock(clock);
 	return result;	
 }
 
@@ -71,14 +74,15 @@ int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype origin_datat
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	if (lastOp == RMA)
 	{
+		fprintf(fp, "Put");
 		printClock(clock);
-		fprintf(fp,"\tPut\torigin_addr\torigin_count\ttarget_rank\ttarget_disp\ttarget_count\n");
 	}
-	else {
+	else 
+	{
 		lastOp = RMA;
 		clock[rank] = clock[rank] + 1;
-		printClock(clock);
-		fprintf(fp,"\tPut\torigin_addr\torigin_count\ttarget_rank\ttarget_disp\ttarget_count\n");
+		fprintf(fp, "Put");
+                printClock(clock);
 	}
 	return PMPI_Put(origin_addr, origin_count, origin_datatype, target_rank, target_disp, target_count, 
 				target_datatype, win);
@@ -89,18 +93,20 @@ int MPI_Get(void *origin_addr, int origin_count, MPI_Datatype origin_datatype, i
 {
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	if (lastOp == RMA){
+	if (lastOp == RMA)
+	{
+		fprintf(fp, "Get");
 		printClock(clock);
-		fprintf(fp,"\tGet\torigin_addr\torigin_count\ttarget_rank\ttarget_disp\ttarget_count\n");
 	}
-	else {
+	else 
+	{
 		lastOp = RMA;
 		clock[rank] = clock[rank] + 1;
-		printClock(clock);
-		fprintf(fp,"\tGet\torigin_addr\torigin_count\ttarget_rank\ttarget_disp\ttarget_count\n");
+		fprintf(fp, "Get");
+                printClock(clock);
 	}
-	return PMPI_Get(origin_addr, origin_count, origin_datatype, target_rank, target_disp,
-             target_count, target_datatype, win);
+	return PMPI_Get(origin_addr, origin_count, origin_datatype, target_rank, target_disp, target_count, 
+				target_datatype, win);
 }
 
 int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank, 
@@ -108,18 +114,20 @@ int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatype origi
 {
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	if (lastOp == RMA){
+	if (lastOp == RMA)
+	{
+		fprintf(fp, "Accumulate");
 		printClock(clock);
-		fprintf(fp,"\tAccumulate\torigin_addr\torigin_count\ttarget_rank\ttarget_disp\ttarget_count\n");
 	}
-	else {
+	else 
+	{
 		lastOp = RMA;
 		clock[rank] = clock[rank] + 1;
-		printClock(clock);
-		fprintf(fp,"\tAccumulate\torigin_addr\torigin_count\ttarget_rank\ttarget_disp\ttarget_count\n");
+		fprintf(fp, "Accumulate");
+                printClock(clock);
 	}
-	return PMPI_Accumulate(origin_addr, origin_count, origin_datatype,target_rank,
-                   target_disp, target_count, target_datatype, op, win);
+	return PMPI_Accumulate(origin_addr, origin_count, origin_datatype,target_rank, target_disp, target_count,
+					target_datatype, op, win);
 }
 
 int MPI_Win_fence(int assert, MPI_Win win)
@@ -129,9 +137,9 @@ int MPI_Win_fence(int assert, MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
 	clock[rank] = clock[rank] + 1;
-	printClock(clock);
-	fprintf(fp,"\tFence");
 	MPI_Allgather(clock + rank, 1, MPI_INT, clock, 1, MPI_INT, MPI_COMM_WORLD);
+	fprintf(fp, "Fence");
+	printClock(clock);
 	return PMPI_Win_fence(assert, win);
 }
 
@@ -142,8 +150,8 @@ int MPI_Win_post(MPI_Group group, int assert, MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
 	clock[rank] = clock[rank] + 1;
+	fprintf(fp, "Post");
 	printClock(clock);
-	fprintf(fp, "\tPost");
 	//get group members and send clock from each member
 	MPI_Group worldGroup;
 	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
@@ -169,8 +177,8 @@ int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
 	clock[rank] = clock[rank] + 1;
+	fprintf(fp, "Start");
 	printClock(clock);
-	fprintf(fp,"\tStart");
 	startGroup = group;
 	//get group members and receive clock to each member
 	MPI_Group worldGroup;
@@ -202,8 +210,8 @@ int MPI_Win_complete(MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
 	clock[rank] = clock[rank] + 1;
+	fprintf(fp, "Complete");
 	printClock(clock);
-	fprintf(fp,"\tComplete");
 	//get group members and send clock from each member
 	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
 	MPI_Group_size(startGroup, &groupSize);
@@ -228,8 +236,8 @@ int MPI_Win_wait(MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
 	clock[rank] = clock[rank] + 1;
+	fprintf(fp, "Wait");
 	printClock(clock);
-	fprintf(fp,"\tWait");
 	//get group members and receive clock to each member
 	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
 	MPI_Group_size(postGroup, &groupSize);
@@ -257,8 +265,8 @@ int MPI_Win_lock(int lock_type, int rank, int assert, MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &pmpiRank);
 	lastOp = SYN;
 	clock[pmpiRank] = clock[pmpiRank] + 1;
+	fprintf(fp, "Lock");
 	printClock(clock);
-	fprintf(fp,"\tLock");
 	return PMPI_Win_lock(lock_type, rank, assert, win);
 }
 
@@ -268,8 +276,8 @@ int MPI_Win_lock_all(int assert, MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
 	clock[rank] = clock[rank] + 1;
+	fprintf(fp, "LockAll");
 	printClock(clock);
-	fprintf(fp,"\tLockAll");
 	return PMPI_Win_lock_all(assert, win);
 }
 
@@ -279,8 +287,8 @@ int MPI_Win_unlock(int rank, MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &pmpiRank);
 	lastOp = SYN;
 	clock[pmpiRank] = clock[pmpiRank] + 1;
+	fprintf(fp, "Unlock");
 	printClock(clock);
-	fprintf(fp,"\tUnlock");
 	return PMPI_Win_unlock(rank, win);
 }
 
@@ -290,7 +298,7 @@ int MPI_Win_unlock_all(MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
 	clock[rank] = clock[rank] + 1;
+	fprintf(fp, "UnlockAll");
 	printClock(clock);
-	fprintf(fp,"\tUnlockAll");
 	return PMPI_Win_unlock_all(win);
 }
