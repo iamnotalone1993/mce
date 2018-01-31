@@ -40,10 +40,8 @@ int main(int argc, char **argv)
 	}
 	MPI_Win_fence(0, win);
 	
-	/*
 	if (rank == 0)
 	{
-		printf("rank = %d\n",rank);
 		MPI_Win_lock(MPI_LOCK_SHARED, 1, 0, win);
 		localBuffer = 6;
 		MPI_Put(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
@@ -63,7 +61,6 @@ int main(int argc, char **argv)
 	}
 	else if (rank == 1)
 	{
-		printf("rank = %d\n",rank);
 		MPI_Win_lock(MPI_LOCK_SHARED, 0, 0, win);
 		localBuffer = 6;
 		MPI_Put(&localBuffer, 1, MPI_INT, 0, 0, 1, MPI_INT, win);
@@ -81,7 +78,6 @@ int main(int argc, char **argv)
 	}
 	else if (rank == 2)
 	{
-		printf("rank = %d\n",rank);
 		MPI_Win_lock(MPI_LOCK_SHARED, 1, 0, win);
 		localBuffer = 4;
 		MPI_Put(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
