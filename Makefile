@@ -1,29 +1,28 @@
-app = example.c
-src = out.c
-program = out
-lib = pmpi.c
-obj = pmpi.o
+ana = analyzer
+prog = example
+preProg = out
+lib = pmpi
 
-$(obj) : $(lib)
+$(lib).o : $(lib).c
 	mpicc -c $^
 
-lib.a : $(obj)
+lib.a : $(lib).o
 	ar -cr $@ $^
 
 .PHONY : pre ana all run clean
-pre : analyzer.c
-	gcc $^ -o analyzer
-ana : pre
-	./analyzer $(app) $(src)
+$(ana) : $(ana).c
+
+ana : $(ana)
+	./$(ana) $(prog).c $(preProg).c
 
 #type "make all" to compile
-all : $(src) lib.a
-	mpicc -Wall $^ -o $(program)
+all : $(preProg).c lib.a
+	mpicc -Wall $^ -o $(preProg)
 
 #type "make run" to run
-run : $(program)
-	mpirun -np 3 --oversubscribe $(program)
+run : $(preProg)
+	mpirun -np 3 --oversubscribe $(preProg)
 
 #type "make clean" to clean
 clean:
-	rm -f $(obj) lib.a $(program) $(src) trace* analyzer
+	rm -f lib.a $(ana) $(preProg)* $(prog) $(lib).o trace*
