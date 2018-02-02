@@ -9,6 +9,19 @@ typedef struct
 	struct list *next;
 } list;
 
+bool charInVarName(char c)
+{
+	if (c == '_') 
+		return true;
+	if (c >= '0' && c <= '9')
+		return true;
+	if (c >= 'a' && c <= 'z')
+		return true;
+	if (c >= 'A' && c <= 'Z')
+		return true;
+	return false;
+}
+
 int main(int argc, char **argv)
 {
 	if (argc == 3)
@@ -55,14 +68,34 @@ int main(int argc, char **argv)
 				}
 				else //if (flag == false)
 				{
-					tmp = strstr(buf, head->varName);
 					fputs(buf, pFileOut);
-					if (tmp != NULL)
+					tmp = strstr(buf, head->varName);
+					while (tmp != NULL)
 					{
-						extraCode = (char *) malloc(20 + strlen(head->varName));
-						sprintf(extraCode, "tracels(false, \"%s\");\n", head->varName);
-						fputs(extraCode, pFileOut);
-						free(extraCode);
+						if (tmp == buf)
+						{
+							if (charInVarName((tmp + strlen(head->varName))[0]) == false)
+							{
+								extraCode = (char *) malloc(20 + strlen(head->varName));
+                                                		sprintf(extraCode, "tracels(false, \"%s\");\n", head->varName);
+                                                		fputs(extraCode, pFileOut);
+                                                		free(extraCode);
+								break;
+							}
+						}
+						else //if (tmp != buf)
+						{
+							if (charInVarName((tmp - 1)[0]) == false && 
+									charInVarName((tmp + strlen(head->varName))[0]) == false)
+							{
+								extraCode = (char *) malloc(20 + strlen(head->varName));
+                                                		sprintf(extraCode, "tracels(false, \"%s\");\n", head->varName);
+                                                		fputs(extraCode, pFileOut);
+                                                		free(extraCode);
+								break;
+							}	 
+						}
+						tmp = strstr(tmp + 1, head->varName);
 					}
 				}
 				free(buf);

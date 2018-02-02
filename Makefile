@@ -1,10 +1,12 @@
-ana = analyzer
-prog = example
-preProg = out
-lib = pmpi
+CC := mpicc
+ana := analyzer
+bench_dir := ./benchmarks/
+bench := example
+prog := $(bench_dir)$(bench)
+preProg := out
+lib := pmpi
 
 $(lib).o : $(lib).c
-	mpicc -c $^
 
 lib.a : $(lib).o
 	ar -cr $@ $^
@@ -12,12 +14,13 @@ lib.a : $(lib).o
 .PHONY : pre ana all run clean
 $(ana) : $(ana).c
 
+#type "make ana" to analyze
 ana : $(ana)
 	./$(ana) $(prog).c $(preProg).c
 
 #type "make all" to compile
 all : $(preProg).c lib.a
-	mpicc -Wall $^ -o $(preProg)
+	$(CC) -Wall $^ -o $(preProg)
 
 #type "make run" to run
 run : $(preProg)
