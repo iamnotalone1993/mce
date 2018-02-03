@@ -5,15 +5,15 @@ void printClock(int *a)
 {
 	int size, i;
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	fprintf(fp, "[");
+	//fprintf(fp, "[");
 	for (i = 0; i < size - 1; i++)
 	{
-		fprintf(fp, "%d,", a[i]);
+		fprintf(fp, "%d|,", a[i]);
 	}
-	fprintf(fp, "%d]\n", a[size-1]);
+	fprintf(fp, "%d\n", a[size-1]);
 }
 
-void tracels(bool isLoad, char *varName)
+void tracels(bool isLoad, void *varaddr)
 {
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -22,16 +22,17 @@ void tracels(bool isLoad, char *varName)
 		clock[rank] = clock[rank] + 1;
         }
 	else {}//if (lastOP == RMA) do nothing
+	
 	if (isLoad == true)
 	{
-		fprintf(fp, "Load|%s", varName);
+		fprintf(fp, "Load\t%p\t", varaddr);
 	} 
 	else //if (isLoad == false)
 	{
-		fprintf(fp, "Store|%s", varName);
+		fprintf(fp, "Store\t%p\t", varaddr);
 	}
 	printClock(clock);
-        lastOp = LS;
+    lastOp = LS;
 }
 
 int MPI_Init(int *argc, char ***argv)
