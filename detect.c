@@ -71,25 +71,78 @@ int main( int argc, char *argv[] )  {
 		while (read = getline(&lines[i], &len, fps[i]) != -1){
 			if (strstr(lines[i],"Fence")) break;
 			else{
+				if (!(strstr(lines[i],"Store") || strstr(lines[i],"Load")){
 				//check inside process
-				char *tmpline;
-				char fname[20],num[10];
-				strcpy(fname,  "trace_");
-				sprintf(num, "%d", i);
-				strcat(fname,num);
-				FILE *tmpfile = fopen(fname,"r");
-				//find position of lines[i]
-				while (read = getline(&tmpline, &len, tmpfile) != -1){
-					if (strcmp(lines[i],tmpline) == 0) break;
-				}
-				//check whether lines[i] and tmpline are conflict
-				while (read = getline(&tmpline, &len, tmpfile) != -1){
-					if (strstr(lines[i],"Fence")) break;
-					else {
-						//check conflict and report
+					char *tmpline;
+					char fname[20],num[10];
+					strcpy(fname,  "trace_");
+					sprintf(num, "%d", i);
+					strcat(fname,num);
+					FILE *tmpfile = fopen(fname,"r");
+					//find position of lines[i]
+					while (read = getline(&tmpline, &len, tmpfile) != -1){
+						if (strcmp(lines[i],tmpline) == 0) break;
 					}
+					//check whether lines[i] and tmpline are conflict
+					while (read = getline(&tmpline, &len, tmpfile) != -1){
+						if (strstr(tmpline[i],"Fence")) break;
+						else {
+							//check conflict inside and report
+							if (strstr(lines[i],"Put")) {
+								if (strstr(tmpline,"Store")) {
+									//generate 2 arrays of token
+									char **put_arr = 0;
+									put_arr = malloc (sizeof (char*) * 7);
+									char *  p    = strtok (lines[i], "\t");
+									int i = 0;
+									while (p) {
+										put_arr[i] = p;
+										i++;
+										p = strtok (NULL, "\t");
+									}
+									char **store_arr = 0;
+									store_arr = malloc (sizeof (char*) * 3);
+									p = strtok (tmpline, "\t");
+									i = 0;
+									while (p) {
+										store_arr[i] = p;
+										i++;
+										p = strtok (NULL, "\t");
+									}
+									if (strcmp(put_arr[1],store_arr[1]) == 0) { //same address
+										//report
+									}
+								}
+								else if (strstr(tmpline,"Put")) {
+									//suppose generated 2 arrays of token
+									if (put_arr1[3] == put_arr2[3] && put_arr1[4] == put_arr2[4]) { //rank == rank && disp == disp -> same address
+										//report
+									}
+								}
+								else if (strstr(tmpline,"Get")) {
+									//suppose generated 2 arrays of token
+									if (put_arr[1] == get_arr[1]) {
+										//report
+									}
+									if (put_arr[3] == get_arr[3] && put_arr[4] == get_arr[4]) { //put to a, get from a (a = address)
+										//report
+									}
+								}
+								else { //Accumulate
+									//similar to put
+								}
+
+							}
+							else if (strstr(lines[i],"Get")){
+
+							}
+							else {//Accumulate
+
+							}
+						}
+					}
+					fclose(tmpfile);
 				}
-				fclose(tmpfile);
 				//check other process events
 				int j;
 				for (j = i + 1; j < numfile; j++){
