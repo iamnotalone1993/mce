@@ -14,7 +14,7 @@ enum opType lastOp;
 MPI_Group startGroup, postGroup;
 
 void printClock(int *);
-void tracels(bool, char *);
+void tracels(bool, void *);
 
 int MPI_Init(int *, char ***);
 int MPI_Finalize(void);
