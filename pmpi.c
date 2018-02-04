@@ -8,7 +8,7 @@ void printClock(int *a)
 	//fprintf(fp, "[");
 	for (i = 0; i < size - 1; i++)
 	{
-		fprintf(fp, "%d|,", a[i]);
+		fprintf(fp, "%d|", a[i]);
 	}
 	fprintf(fp, "%d\n", a[size-1]);
 }
@@ -51,7 +51,7 @@ int MPI_Init(int *argc, char ***argv)
 	{
 		clock[i] = 0;
 	}
-	fprintf(fp, "Init");
+	fprintf(fp, "Init\t");
 	printClock(clock);
 	return result;	
 }
@@ -75,15 +75,15 @@ int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype origin_datat
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	if (lastOp == RMA)
 	{
-		fprintf(fp, "Put\t%p\t%d\t%d\t%d\t%d\t",origin_addr,origin_count,target_rank,target_disp,target_count);
+		fprintf(fp, "Put\t%p\t%d\t%d\t%ld\t%d\t",origin_addr,origin_count,target_rank,target_disp,target_count);
 		printClock(clock);
 	}
 	else 
 	{
 		lastOp = RMA;
 		clock[rank] = clock[rank] + 1;
-		fprintf(fp, "Put");
-                printClock(clock);
+		fprintf(fp, "Put\t%p\t%d\t%d\t%ld\t%d\t",origin_addr,origin_count,target_rank,target_disp,target_count);
+        printClock(clock);
 	}
 	return PMPI_Put(origin_addr, origin_count, origin_datatype, target_rank, target_disp, target_count, 
 				target_datatype, win);
@@ -96,14 +96,14 @@ int MPI_Get(void *origin_addr, int origin_count, MPI_Datatype origin_datatype, i
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	if (lastOp == RMA)
 	{
-		fprintf(fp, "Get");
+		fprintf(fp, "Get\t%p\t%d\t%d\t%ld\t%d\t",origin_addr,origin_count,target_rank,target_disp,target_count);
 		printClock(clock);
 	}
 	else 
 	{
 		lastOp = RMA;
 		clock[rank] = clock[rank] + 1;
-		fprintf(fp, "Get");
+		fprintf(fp, "Get\t%p\t%d\t%d\t%ld\t%d\t",origin_addr,origin_count,target_rank,target_disp,target_count);
                 printClock(clock);
 	}
 	return PMPI_Get(origin_addr, origin_count, origin_datatype, target_rank, target_disp, target_count, 
@@ -117,14 +117,14 @@ int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatype origi
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	if (lastOp == RMA)
 	{
-		fprintf(fp, "Accumulate");
+		fprintf(fp, "Accumulate\t%p\t%d\t%d\t%ld\t%d\t",origin_addr,origin_count,target_rank,target_disp,target_count);
 		printClock(clock);
 	}
 	else 
 	{
 		lastOp = RMA;
 		clock[rank] = clock[rank] + 1;
-		fprintf(fp, "Accumulate");
+		fprintf(fp, "Accumulate\t%p\t%d\t%d\t%ld\t%d\t",origin_addr,origin_count,target_rank,target_disp,target_count);
                 printClock(clock);
 	}
 	return PMPI_Accumulate(origin_addr, origin_count, origin_datatype,target_rank, target_disp, target_count,
@@ -139,7 +139,7 @@ int MPI_Win_fence(int assert, MPI_Win win)
 	lastOp = SYN;
 	clock[rank] = clock[rank] + 1;
 	MPI_Allgather(clock + rank, 1, MPI_INT, clock, 1, MPI_INT, MPI_COMM_WORLD);
-	fprintf(fp, "Fence");
+	fprintf(fp, "Fence\t");
 	printClock(clock);
 	return PMPI_Win_fence(assert, win);
 }
@@ -151,8 +151,6 @@ int MPI_Win_post(MPI_Group group, int assert, MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
 	clock[rank] = clock[rank] + 1;
-	fprintf(fp, "Post");
-	printClock(clock);
 	//get group members and send clock from each member
 	MPI_Group worldGroup;
 	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
@@ -168,6 +166,13 @@ int MPI_Win_post(MPI_Group group, int assert, MPI_Win win)
 	{
 		MPI_Send(clock, size, MPI_INT, worldRanks[i], 0, MPI_COMM_WORLD);
 	}
+	fprintf(fp, "Post");
+	for (i = 0; i < groupSize; i++)
+	{
+		fprintf(fp, "\t%d",groupRanks[i]);
+	}
+	fprintf(fp, "\t");
+	printClock(clock);
 	return PMPI_Win_post(group, assert, win);
 }
 
@@ -199,7 +204,12 @@ int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
 		}
 	}
 	fprintf(fp, "Start");
-        printClock(clock);
+	for (i = 0; i < groupSize; i++)
+	{
+		fprintf(fp, "\t%d",groupRanks[i]);
+	}
+	fprintf(fp, "\t");
+    printClock(clock);
 	return PMPI_Win_start(group, assert, win);
 }
 
@@ -211,8 +221,6 @@ int MPI_Win_complete(MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
 	clock[rank] = clock[rank] + 1;
-	fprintf(fp, "Complete");
-	printClock(clock);
 	//get group members and send clock from each member
 	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
 	MPI_Group_size(startGroup, &groupSize);
@@ -226,6 +234,13 @@ int MPI_Win_complete(MPI_Win win)
 	{
 		MPI_Send(clock, size, MPI_INT, worldRanks[i], 0, MPI_COMM_WORLD);
 	}
+	fprintf(fp, "Complete");
+	for (i = 0; i < groupSize; i++)
+	{
+		fprintf(fp, "\t%d",groupRanks[i]);
+	}
+	fprintf(fp, "\t");
+	printClock(clock);
 	return PMPI_Win_complete(win);
 }
 
@@ -255,7 +270,12 @@ int MPI_Win_wait(MPI_Win win)
 			if (tmpClock[j] > clock[j]) clock[j] = tmpClock[j];
 		}
 	}
-        fprintf(fp, "Wait");
+    fprintf(fp, "Wait");
+    for (i = 0; i < groupSize; i++)
+    {
+		fprintf(fp, "\t%d",groupRanks[i]);
+	}
+	fprintf(fp, "\t");
 	printClock(clock);
 	return PMPI_Win_wait(win);
 }
@@ -266,7 +286,7 @@ int MPI_Win_lock(int lock_type, int rank, int assert, MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &pmpiRank);
 	lastOp = SYN;
 	clock[pmpiRank] = clock[pmpiRank] + 1;
-	fprintf(fp, "Lock");
+	fprintf(fp, "Lock\t");
 	printClock(clock);
 	return PMPI_Win_lock(lock_type, rank, assert, win);
 }
@@ -277,7 +297,7 @@ int MPI_Win_lock_all(int assert, MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
 	clock[rank] = clock[rank] + 1;
-	fprintf(fp, "LockAll");
+	fprintf(fp, "LockAll\t");
 	printClock(clock);
 	return PMPI_Win_lock_all(assert, win);
 }
@@ -288,7 +308,7 @@ int MPI_Win_unlock(int rank, MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &pmpiRank);
 	lastOp = SYN;
 	clock[pmpiRank] = clock[pmpiRank] + 1;
-	fprintf(fp, "Unlock");
+	fprintf(fp, "Unlock\t");
 	printClock(clock);
 	return PMPI_Win_unlock(rank, win);
 }
@@ -299,7 +319,7 @@ int MPI_Win_unlock_all(MPI_Win win)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	lastOp = SYN;
 	clock[rank] = clock[rank] + 1;
-	fprintf(fp, "UnlockAll");
+	fprintf(fp, "UnlockAll\t");
 	printClock(clock);
 	return PMPI_Win_unlock_all(win);
 }
