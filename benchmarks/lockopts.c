@@ -6,7 +6,6 @@
 #include "mpi.h" 
 #include "stdio.h"
 #include "stdlib.h"
-#include "mpitest.h"
 
 /* tests passive target RMA on 2 processes. tests the lock-single_op-unlock 
    optimization for less common cases:
@@ -22,7 +21,7 @@ int main(int argc, char *argv[])
     MPI_Win      win;
     int          errs = 0;
 
-    MTest_Init(&argc,&argv); 
+	MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD,&nprocs); 
     MPI_Comm_rank(MPI_COMM_WORLD,&wrank); 
 
@@ -204,7 +203,6 @@ int main(int argc, char *argv[])
     free( srcbuf );
     MPI_Type_free( &vectype );
 
-    MTest_Finalize(errs);
     MPI_Finalize(); 
     return 0; 
 } 
