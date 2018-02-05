@@ -4,7 +4,7 @@ bench_dir := ./benchmarks/
 bench := example
 prog := $(bench_dir)$(bench)
 preProg := out
-lib := pmpi
+lib := profiler
 
 $(lib).o : $(lib).c
 
