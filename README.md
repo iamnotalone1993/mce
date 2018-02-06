@@ -1,1 +1,1 @@
-A novel approach to dectect memory consistency errors in MPI one-sided communication
+A Clock-based Approach to Dectect Memory Consistency Errors in MPI One-sided Communication
