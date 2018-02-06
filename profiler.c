@@ -65,6 +65,7 @@ int MPI_Finalize()
 
 int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, MPI_Win *win)
 {
+	fprintf("Shared\t%p\t%ld\t%d\n",base,size,disp_unit);
 	return PMPI_Win_create(base, size, disp_unit, info, comm, win);
 }
 
