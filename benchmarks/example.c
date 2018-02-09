@@ -21,14 +21,15 @@ int main(int argc, char **argv)
 	MPI_Win_fence(0, win);
 	if (rank == 0)
 	{	
-		localBuffer = 5;
-		MPI_Put(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
-		sharedBuffer = 3;
+		MPI_Get(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
 	}
 	else if (rank == 1)
 	{
-		localBuffer = 4;
-		MPI_Put(&localBuffer, 1, MPI_INT, 2, 0, 1, MPI_INT, win);
+		MPI_Get(&localBuffer, 1, MPI_INT, 2, 0, 1, MPI_INT, win);
+		if (localBuffer == 1)
+		{
+			//do something
+		}
 	}
 	else if (rank == 2)
 	{
@@ -52,8 +53,7 @@ int main(int argc, char **argv)
 
 		MPI_Group_incl(worldGroup, 1, ranks + 1, &primeGroup);
 		MPI_Win_start(primeGroup, 0, win);
-		localBuffer = 4;
-                MPI_Put(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
+                MPI_Get(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
 		sharedBuffer = 5;
 		MPI_Win_complete(win);
 		/**/
