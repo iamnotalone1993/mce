@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 							if (charInVarName((tmp + strlen(head->varName))[0]) == false)
 							{
 								extraCode = (char *) malloc(20 + strlen(head->varName));
-                                                		sprintf(extraCode, "tracels(false, \"%s\");\n", head->varName);
+                                                		sprintf(extraCode, "tracels(false, &%s);\n", head->varName);
                                                 		fputs(extraCode, pFileOut);
                                                 		free(extraCode);
 								break;
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 									charInVarName((tmp + strlen(head->varName))[0]) == false)
 							{
 								extraCode = (char *) malloc(20 + strlen(head->varName));
-                                                		sprintf(extraCode, "tracels(false, \"%s\");\n", head->varName);
+                                                		sprintf(extraCode, "tracels(false, &%s);\n", head->varName);
                                                 		fputs(extraCode, pFileOut);
                                                 		free(extraCode);
 								break;

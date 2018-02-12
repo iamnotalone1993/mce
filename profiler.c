@@ -1,5 +1,4 @@
 #include "profiler.h"
-#define getVarName(var) #var
 
 void printClock(int *a)
 {
@@ -18,11 +17,11 @@ void tracels(bool isLoad, void *varaddr) //TODO
 {	
 	if (isLoad == true)
 	{
-		fprintf(fp, "Load\t%p\t", varaddr);
+		fprintf(fp, "Load\t%p\n", varaddr);
 	} 
 	else //if (isLoad == false)
 	{
-		fprintf(fp, "Store\t%p\t", varaddr);
+		fprintf(fp, "Store\t%p\n", varaddr);
 	}
 }
 
@@ -42,8 +41,8 @@ int MPI_Init(int *argc, char ***argv)
 	{
 		clock[i] = 0;
 	}
-	fprintf(fp, "Init\t");
-	printClock(clock);
+	//fprintf(fp, "Init\t");
+	//printClock(clock);
 
 	return result;
 }
@@ -66,7 +65,7 @@ int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_
 
 	result = PMPI_Win_create(base, size, disp_unit, info, comm, win);
 
-	//fprintf("Shared\t%p\t%ld\t%d\n",base,size,disp_unit);
+	//fprintf(fp, "Shared\t%p\t%d\t%d\n", base, (int) size, disp_unit);
 
 	return result;
 }
@@ -79,7 +78,7 @@ int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype origin_datat
 	result = PMPI_Put(origin_addr, origin_count, origin_datatype, target_rank, target_disp, target_count, 
                                 target_datatype, win);
 
-	//fprintf(fp, "Put\t%p\t%d\t%d\t%ld\t%d\t",origin_addr,origin_count,target_rank,target_disp,target_count);
+	fprintf(fp, "Put\t%p\t%d\t%d\t%d\t%d\n", origin_addr, origin_count, target_rank, (int) target_disp, target_count);
 
 	return result;
 }
@@ -92,7 +91,7 @@ int MPI_Get(void *origin_addr, int origin_count, MPI_Datatype origin_datatype, i
 	result = PMPI_Get(origin_addr, origin_count, origin_datatype, target_rank, target_disp, target_count, 
                                 target_datatype, win);
 
-	//fprintf(fp, "Get\t%p\t%d\t%d\t%ld\t%d\t",origin_addr,origin_count,target_rank,target_disp,target_count);
+	fprintf(fp, "Get\t%p\t%d\t%d\t%d\t%d\n", origin_addr, origin_count, target_rank, (int) target_disp, target_count);
 
 	return result;
 }
@@ -105,7 +104,7 @@ int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatype origi
 	result = PMPI_Accumulate(origin_addr, origin_count, origin_datatype,target_rank, target_disp, target_count,
                                         target_datatype, op, win);
 
-	//fprintf(fp, "Accumulate\t%p\t%d\t%d\t%ld\t%d\t",origin_addr,origin_count,target_rank,target_disp,target_count);
+	fprintf(fp, "Accumulate\t%p\t%d\t%d\t%d\t%d\n", origin_addr, origin_count, target_rank, (int) target_disp, target_count);
 
 	return result;
 }
@@ -151,11 +150,10 @@ int MPI_Win_post(MPI_Group group, int assert, MPI_Win win)
 		PMPI_Send(clock, size, MPI_INT, worldRanks[i], 0, MPI_COMM_WORLD);
 	}
 	fprintf(fp, "Post");
-	for (i = 0; i < groupSize; i++)
+	/*for (i = 0; i < groupSize; i++)
 	{
 		fprintf(fp, "\t%d",groupRanks[i]);
-	}
-	fprintf(fp, "\t");
+	}*/
 	printClock(clock);
 	free(worldRanks);
 	free(groupRanks);
@@ -194,12 +192,12 @@ int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
 		}
 	}
 	fprintf(fp, "Start");
-	for (i = 0; i < groupSize; i++)
-	{
-		fprintf(fp, "\t%d",groupRanks[i]);
-	}
 	fprintf(fp, "\t");
-    	printClock(clock);
+	printClock(clock);
+	/*for (i = 0; i < groupSize; i++)
+	{
+		fprintf(fp, "\t%d", groupRanks[i]);
+	}*/
 	free(worldRanks);
         free(groupRanks);
 	free(tmpClock);
@@ -232,11 +230,10 @@ int MPI_Win_complete(MPI_Win win)
 		PMPI_Send(clock, size, MPI_INT, worldRanks[i], 0, MPI_COMM_WORLD);
 	}
 	fprintf(fp, "Complete");
-	for (i = 0; i < groupSize; i++)
+	/*for (i = 0; i < groupSize; i++)
 	{
 		fprintf(fp, "\t%d",groupRanks[i]);
-	}
-	fprintf(fp, "\t");
+	}*/
 	printClock(clock);
 	free(worldRanks);
         free(groupRanks);
@@ -274,11 +271,10 @@ int MPI_Win_wait(MPI_Win win)
 		}
 	}
     	fprintf(fp, "Wait");
-    	for (i = 0; i < groupSize; i++)
+    	/*for (i = 0; i < groupSize; i++)
     	{
 		fprintf(fp, "\t%d",groupRanks[i]);
-	}
-	fprintf(fp, "\t");
+	}*/
 	printClock(clock);
 	free(worldRanks);
         free(groupRanks);

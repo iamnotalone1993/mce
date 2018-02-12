@@ -5,13 +5,17 @@ bench := example
 prog := $(bench_dir)$(bench)
 preProg := out
 lib := profiler
+dec := detector
+num_procs := 3
 
 $(lib).o : $(lib).c
+
+$(dec) : $(dec).c
 
 lib.a : $(lib).o
 	ar -cr $@ $^
 
-.PHONY : pre ana all run clean
+.PHONY : ana all run dec clean
 $(ana) : $(ana).c
 
 #type "make ana" to analyze
@@ -24,8 +28,12 @@ all : $(preProg).c lib.a
 
 #type "make run" to run
 run : $(preProg)
-	mpirun -np 3 --oversubscribe $(preProg)
+	mpirun -np $(num_procs) --oversubscribe $(preProg)
+
+#type "make dec" to detect
+dec : $(dec)
+	./$(dec) $(num_procs)
 
 #type "make clean" to clean
 clean:
-	rm -f lib.a $(ana) $(preProg)* $(prog) $(lib).o trace*
+	rm -f lib.a $(ana) $(preProg)* $(prog) $(lib).o trace* $(dec)
