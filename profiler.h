@@ -1,5 +1,6 @@
 #ifndef __PMPI_H__
 #define __PMPI_H__
+
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h> 
@@ -7,10 +8,7 @@
 #include <stdbool.h>
 
 int *clock;
-char fname[50] = "trace_";
 FILE *fp;
-enum opType {LS = 1, SYN = 2, RMA = 3};
-enum opType lastOp;
 MPI_Group startGroup, postGroup;
 
 void printClock(int *);
@@ -28,8 +26,9 @@ int MPI_Win_start(MPI_Group, int, MPI_Win);
 int MPI_Win_complete(MPI_Win);
 int MPI_Win_wait(MPI_Win);
 int MPI_Win_lock(int, int, int, MPI_Win);
-int MPI_Win_lock_all(int, MPI_Win);
 int MPI_Win_unlock(int, MPI_Win);
-int MPI_Win_unlock_all(MPI_Win);
+int MPI_Send(const void *, int, MPI_Datatype, int, int, MPI_Comm);
+int MPI_Recv(void *, int, MPI_Datatype, int, int, MPI_Comm, MPI_Status *);
+int MPI_Barrier(MPI_Comm);
 
 #endif
