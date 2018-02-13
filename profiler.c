@@ -28,14 +28,14 @@ void tracels(bool isLoad, void *varaddr) //TODO
 int MPI_Init(int *argc, char ***argv)
 {
 	int result, rank, size, i;
-	char srank[15];
+	char fileName[15];
 
 	result = PMPI_Init(argc, argv);
 
 	PMPI_Comm_size(MPI_COMM_WORLD, &size);
         PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	sprintf(srank, "trace%d", rank);
-	fp = fopen(srank, "w");
+	sprintf(fileName, "trace%d", rank);
+	fp = fopen(fileName, "w");
 	clock = (int *) malloc(size * sizeof(int));
 	for (i = 0; i < size; i++) 
 	{
@@ -65,7 +65,7 @@ int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_
 
 	result = PMPI_Win_create(base, size, disp_unit, info, comm, win);
 
-	//fprintf(fp, "Shared\t%p\t%d\t%d\n", base, (int) size, disp_unit);
+	fprintf(fp, "Create\t%p\t%d\t%d\n", base, (int) size, disp_unit);
 
 	return result;
 }
@@ -149,7 +149,7 @@ int MPI_Win_post(MPI_Group group, int assert, MPI_Win win)
 	{
 		PMPI_Send(clock, size, MPI_INT, worldRanks[i], 0, MPI_COMM_WORLD);
 	}
-	fprintf(fp, "Post");
+	fprintf(fp, "Post\t");
 	/*for (i = 0; i < groupSize; i++)
 	{
 		fprintf(fp, "\t%d",groupRanks[i]);
@@ -191,8 +191,7 @@ int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
 			if (tmpClock[j] > clock[j]) clock[j] = tmpClock[j];
 		}
 	}
-	fprintf(fp, "Start");
-	fprintf(fp, "\t");
+	fprintf(fp, "Start\t");
 	printClock(clock);
 	/*for (i = 0; i < groupSize; i++)
 	{
@@ -229,7 +228,7 @@ int MPI_Win_complete(MPI_Win win)
 	{
 		PMPI_Send(clock, size, MPI_INT, worldRanks[i], 0, MPI_COMM_WORLD);
 	}
-	fprintf(fp, "Complete");
+	fprintf(fp, "Complete\t");
 	/*for (i = 0; i < groupSize; i++)
 	{
 		fprintf(fp, "\t%d",groupRanks[i]);
@@ -270,7 +269,7 @@ int MPI_Win_wait(MPI_Win win)
 			if (tmpClock[j] > clock[j]) clock[j] = tmpClock[j];
 		}
 	}
-    	fprintf(fp, "Wait");
+    	fprintf(fp, "Wait\t");
     	/*for (i = 0; i < groupSize; i++)
     	{
 		fprintf(fp, "\t%d",groupRanks[i]);

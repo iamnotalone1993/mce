@@ -10,7 +10,7 @@ num_procs := 3
 
 $(lib).o : $(lib).c
 
-$(dec) : $(dec).c
+$(dec) : $(dec).h
 
 lib.a : $(lib).o
 	ar -cr $@ $^

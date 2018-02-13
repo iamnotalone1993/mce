@@ -1,5 +1,5 @@
-#ifndef __PMPI_H__
-#define __PMPI_H__
+#ifndef PMPI_H
+#define PMPI_H
 
 #include <mpi.h>
 #include <stdio.h>
