@@ -26,7 +26,7 @@
 #define CREATE		16
 
 typedef struct {
-	void *base;
+	char base[11];
 	int size;
 	int disp_unit;
 	void *next;
@@ -49,7 +49,7 @@ typedef struct {
         void *next;
 } Loca;
 
-int isSynCall(char *);
+int getEventCode(char *);
 int *getClock(char *);
 bool equalClock(int *, int *, int);
 

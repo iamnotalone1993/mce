@@ -48,7 +48,7 @@ int *getClock(char *str)
 	return clock;
 }
 
-int equalClock(int *clock1, int *clock2, int size)
+bool equalClock(int *clock1, int *clock2, int size)
 {
 	int i;
 	for (i = 0; i < size; i++)
@@ -63,9 +63,9 @@ int equalClock(int *clock1, int *clock2, int size)
 
 int main(int argc, char **argv)
 {
-	int size, i, index, *clock, *tmpClock;
+	int size, i, index, *clock, *tmpClock, tmpInt, eventCode;
 	char fileName[15];
-	char *buffer, *clockStr;
+	char *buffer, *clockStr, *tmpBuffer, *tmpStr;
 	FILE **pFile;
 	List *head;
 
@@ -80,8 +80,25 @@ int main(int argc, char **argv)
 		{
 			perror("Error opening file");
 		}
+
+		buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
 		fgets(buffer, BUFFER_SIZE, pFile[i]);
-		
+		tmpBuffer = strchr(buffer, '\t') + 1;
+		memcpy(head[i].base, tmpBuffer, 10);
+		tmpBuffer = strchr(tmpBuffer, '\t') + 1;
+		tmpInt = strcspn(tmpBuffer, "\t");
+		tmpStr = (char *) malloc(tmpInt * sizeof(char));
+		memcpy(tmpStr, tmpBuffer, tmpInt);
+		head[i].size = atoi(tmpStr);
+		printf("%d\n", head[i].size);
+		free(tmpStr);
+		tmpBuffer = strchr(tmpBuffer, '\t') + 1;
+		tmpInt = strcspn(tmpBuffer, "\t");
+		tmpStr = (char *) malloc(tmpInt * sizeof(char));
+		memcpy(tmpStr, tmpBuffer, tmpInt);
+		head[i].disp_unit = atoi(tmpStr);
+		free(tmpStr);
+		free(buffer);
 	}
 
 	buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
@@ -119,14 +136,14 @@ int main(int argc, char **argv)
 	
 				for (i = index; i < size; i++)
                         	{
-                                	if (fgets(buffer, BUFFER_SIZE, pFile[i] != NULL)
+                                	if (fgets(buffer, BUFFER_SIZE, pFile[i]) != NULL)
                                 	{
 						eventCode = getEventCode(buffer);
                                         	if (eventCode != FENCE)
 						{
 							if (eventCode >= PUT && eventCode <= ACCUMULATE)
 							{
-								h[i]->next = 
+								//head[i]->next
 							}
 						}
 						else
@@ -137,7 +154,7 @@ int main(int argc, char **argv)
                         	}
 			}
 			
-			else if (isSynCall(buffer) == 2)
+			else if (getEventCode(buffer) == 2)
 			{
 			}
 			else { /*do nothing*/ }
@@ -153,6 +170,7 @@ int main(int argc, char **argv)
 		fclose(pFile[i]);
 	}
 	free(pFile);
+	free(head);
 
 	return 0;
 }
