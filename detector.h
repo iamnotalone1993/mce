@@ -70,6 +70,7 @@ int getEventCode(char *);
 char *convertCode2Name(int);
 int *getClock(char *);
 bool equalClock(int *, int *, int);
+bool isConcurrent(int *, int, int *, int);
 
 void insertCommNode(List *, int, int, char * /*, int *, int*/);
 void insertLocaNode(List *, int, char *);
@@ -78,6 +79,7 @@ void printList(List *, int);
 void insertChain(Chai *, int, char *);
 void printChain(Chai);
 
+void readEventWithinEpoch(FILE **, int, List *, Chai, int);
 void detectMCEInProc(Chai);
 void detectMCEAcrossProc(List *, int);
 

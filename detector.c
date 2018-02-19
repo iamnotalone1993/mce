@@ -148,6 +148,15 @@ char *getData(char **buffer)
 	return tmpStr;
 }
 
+bool isConcurrent(int *clock1, int rank1, int *clock2, int rank2)
+{
+	if (clock1[rank2] >= clock2[rank2])
+		return false;
+	if (clock2[rank1] >= clock1[rank1])
+		return false;
+	return true;
+}
+
 void insertCommNode(List *aList, int code, int target_rank, char *target_addr/*, int *clock, int size*/)
 {
 	if (aList->commHead == NULL && aList->commTail == NULL)
@@ -388,9 +397,48 @@ void detectMCEInProc(Chai aChain)
 void detectMCEAcrossProc(List *aList, int size)
 {
 	int i;
+	Comm *commTmp1, *commTmp2;
+	Loca *locaTmp3;
 	for (i = 0; i < size; i++)
 	{
-		//aList[i]
+		commTmp1 = aList[i]->commHead;
+		while (commTmp1 != NULL)
+		{
+			commTmp2 = commTmp2->next;
+			while (commTmp2 != NULL)
+			{
+				if (strcmp(commTmp1->target_addr, commTmp2->target_addr) == 0 &&
+					isConcurrent(commTmp1->clock, commTmp1->origin_rank, commTmp2->clock, commTmp2->origin_rank) == true)
+				{
+					printf("MCE across processes on %s in %d between %s in process %d and %s in process %d\n",
+							commTmp1->target_addr, i, convertCode2Name(commTmp1->code), commTmp1->origin_rank,
+									convertCode2Name(commTmp2->code), commTmp2->origin_rank);
+				}
+				else 
+				{
+					/* do nothing */
+				}
+				commTmp2 = commTmp2->next;
+			}
+			commTmp1 = commTmp1->next;
+			
+			locaTmp3 = aList[i]->locaHead;	
+			while (locaTmp3 != NULL)
+			{
+				if (strcmp(commTmp1->target_addr, locaTmp3->varAddr) == 0 &&
+					isConcurrent(commTmp1->clock, commTmp1->origin_rank, locaTmp3->clock, i) == true)
+				{
+					printf("MCE across processes on %s in %d between %s in process %d and %s\n",
+                                                        commTmp1->target_addr, i, convertCode2Name(commTmp1->code), commTmp1->origin_rank,
+                                                                        convertCode2Name(locaTmp3->code));
+				}
+				else 
+				{
+					/* do nothing */
+				}
+				locaTmp3 = locaTmp3->next;
+			}
+		}
 	}
 }
 
