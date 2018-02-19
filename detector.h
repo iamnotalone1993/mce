@@ -19,11 +19,9 @@
 #define	WAIT			9
 #define	LOCK			10
 #define	UNLOCK			11
-#define	SEND			12
-#define	RECV			13
-#define	LOAD			14
-#define	STORE			15
-#define CREATE			16
+#define	LOAD			12
+#define	STORE			13
+#define CREATE			14
 
 /*typedef struct {
         int code;
@@ -33,19 +31,24 @@
 
 typedef struct Comm {
         int code;
-	char *origin_addr;
 	int target_rank;
 	char *target_addr;
-	//int *clock;
+	int *clock;
         struct Comm *next;
 } Comm;
 
 typedef struct Loca {
         int code;
         char *varAddr;
-	//int *clock;
+	int *clock;
         struct Loca *next;
 } Loca;
+
+typedef struct Unif {
+	int code;
+	char *varAddr;
+	struct Unif *next;
+} Unif;
 
 typedef struct List {
         char *base;
@@ -59,19 +62,23 @@ typedef struct List {
 
 typedef struct Chai {
 	int rank;
-	struct Loca *head;
-	struct Loca *tail;
+	struct Unif *head;
+	struct Unif *tail;
 } Chai;
-
-List insertCommNode(List, int, char *, int, char * /*, int *, int*/);
-List insertLocaNode(List, int, char *);
-Chai insertChain(Chai, int, char *);
 
 int getEventCode(char *);
 char *convertCode2Name(int);
 int *getClock(char *);
 bool equalClock(int *, int *, int);
 
+void insertCommNode(List *, int, int, char * /*, int *, int*/);
+void insertLocaNode(List *, int, char *);
+void freeList(List *, int);
+void printList(List *, int);
+void insertChain(Chai *, int, char *);
+void printChain(Chai);
+
 void detectMCEInProc(Chai);
+void detectMCEAcrossProc(List *, int);
 
 #endif

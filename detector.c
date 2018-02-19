@@ -1,63 +1,5 @@
 #include "detector.h"
 
-List insertCommNode(List aList, int code, char *origin_addr, int target_rank, char *target_addr/*, int *clock, int size*/)
-{
-	if (aList.commHead == NULL && aList.commTail == NULL)
-	{
-		aList.commTail = (Comm *) malloc(sizeof(Comm));
-		aList.commHead = aList.commTail;
-	}
-	else
-	{
-		aList.commTail->next = (Comm *) malloc(sizeof(Comm));
-		aList.commTail = aList.commTail->next;
-	}
-	aList.commTail->code = code;
-	aList.commTail->origin_addr = origin_addr;
-	aList.commTail->target_rank = target_rank;
-	aList.commTail->target_addr = target_addr;
-	//aList.commTail->clock = (int *) malloc (size * sizeof(int));
-	aList.commTail->next = NULL;
-	return aList;	
-}
-
-List insertLocaNode(List aList, int code, char *varAddr)
-{
-	if (aList.locaHead == NULL && aList.locaTail == NULL)
-        {
-                aList.locaTail = (Loca *) malloc(sizeof(Loca));
-                aList.locaHead = aList.locaTail;
-        }
-        else
-        {
-                aList.locaTail->next = (Loca *) malloc(sizeof(Loca));
-                aList.locaTail = aList.locaTail->next;
-        }
-	aList.locaTail->code = code;
-	aList.locaTail->varAddr = varAddr;
-	aList.locaTail->next = NULL;
-	return aList;
-}
-
-Chai insertChainNode(Chai aChain, int code, char *varAddr)
-{
-	if (aChain.head == NULL && aChain.tail == NULL)
-	{
-		aChain.tail = (Loca *) malloc(sizeof(Loca));
-		aChain.head = aChain.tail;
-	}
-	else
-	{
-		aChain.tail->next = (Loca *) malloc(sizeof(Loca));
-		aChain.tail = aChain.tail->next;
-	}
-	aChain.tail->code = code;
-	aChain.tail->varAddr = (char *) malloc((strlen(varAddr) + 1) * sizeof (char));
-	strcpy(aChain.tail->varAddr, varAddr);
-	aChain.tail->next = NULL;
-	return aChain;
-}
-
 int getEventCode(char *str)
 {
 	if (strstr(str, "Fence") != NULL)
@@ -206,6 +148,175 @@ char *getData(char **buffer)
 	return tmpStr;
 }
 
+void insertCommNode(List *aList, int code, int target_rank, char *target_addr/*, int *clock, int size*/)
+{
+	if (aList->commHead == NULL && aList->commTail == NULL)
+	{
+		aList->commTail = (Comm *) malloc(sizeof(Comm));
+		aList->commHead = aList->commTail;
+	}
+	else
+	{
+		aList->commTail->next = (Comm *) malloc(sizeof(Comm));
+		aList->commTail = aList->commTail->next;
+	}
+	aList->commTail->code = code;
+	aList->commTail->target_rank = target_rank;
+	aList->commTail->target_addr = target_addr;
+	//aList.commTail->clock = (int *) malloc (size * sizeof(int));
+	aList->commTail->next = NULL;
+}
+
+void insertLocaNode(List *aList, int code, char *varAddr)
+{
+	if (aList->locaHead == NULL && aList->locaTail == NULL)
+        {
+                aList->locaTail = (Loca *) malloc(sizeof(Loca));
+                aList->locaHead = aList->locaTail;
+        }
+        else
+        {
+                aList->locaTail->next = (Loca *) malloc(sizeof(Loca));
+                aList->locaTail = aList->locaTail->next;
+        }
+	aList->locaTail->code = code;
+	aList->locaTail->varAddr = varAddr;
+	aList->locaTail->next = NULL;
+}
+
+void freeList(List *aList, int size)
+{
+	int i;
+	for (i = 0; i < size; i++)
+	{
+		while (aList[i].commHead != NULL)
+		{
+			aList[i].commTail = aList[i].commHead;
+			aList[i].commHead = aList[i].commHead->next;
+			free(aList[i].commTail->target_addr);
+			free(aList[i].commTail);
+		}
+		aList[i].commTail = NULL;
+
+		while (aList[i].locaHead != NULL)
+		{
+			aList[i].locaTail = aList[i].locaHead;
+			aList[i].locaHead = aList[i].locaHead->next;
+			free(aList[i].locaTail->varAddr);
+			free(aList[i].locaTail);
+		}
+		aList[i].locaTail = NULL;
+	}
+}
+
+void printList(List *aList, int size)
+{
+	int i;
+	printf("\nPrinting a List...\n");
+	for (i = 0; i < size; i++)
+	{
+		printf("rank=%d base=%s size=%d disp_unit=%d\n", i, aList[i].base, aList[i].size, aList[i].disp_unit);
+		Comm *tmp1 = aList[i].commHead;
+		while (tmp1 != NULL)
+		{
+			printf("code=%s target_rank=%d\n", convertCode2Name(tmp1->code), tmp1->target_rank);
+			tmp1 = tmp1->next;
+		}
+		Loca *tmp2 = aList[i].locaHead;
+		while (tmp2 != NULL)
+		{
+			printf("code=%s\n", convertCode2Name(tmp2->code));
+			tmp2 = tmp2->next;
+		}
+	}
+}
+
+void insertChainNode(Chai *aChain, int code, char *varAddr)
+{
+	if (aChain->head == NULL && aChain->tail == NULL)
+	{
+		aChain->tail = (Unif *) malloc(sizeof(Unif));
+		aChain->head = aChain->tail;
+	}
+	else
+	{
+		aChain->tail->next = (Unif *) malloc(sizeof(Unif));
+		aChain->tail = aChain->tail->next;
+	}
+	aChain->tail->code = code;
+	aChain->tail->varAddr = (char *) malloc((strlen(varAddr) + 1) * sizeof (char));
+	strcpy(aChain->tail->varAddr, varAddr);
+	aChain->tail->next = NULL;
+}
+
+void printChain(Chai aChain)
+{
+	printf("\nPrinting a Chain...\n");
+	printf("rank=%d\n", aChain.rank);
+	Unif *tmp = aChain.head;
+	while (tmp != NULL)
+	{
+		printf("code=%s varAddr=%s\n", convertCode2Name(tmp->code), tmp->varAddr);
+		tmp = tmp->next;
+	}
+}
+
+void readEventWithinEpoch(FILE **pFile, int index, List *aList, Chai *aChain, int endEvent)
+{
+	while (true)
+        {
+        	char *buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
+        	if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL)
+                {
+			printf("C9: %s", buffer);
+			getchar();
+                	int eventCode = getEventCode(buffer);
+                       	if (eventCode != endEvent)
+                        {
+				if (eventCode >= GET && eventCode <= ACCUMULATE)
+				{
+					char *tmpBuffer = buffer;
+					char *tmpStr = getData(&tmpBuffer);
+					free(tmpStr);
+					tmpStr = getData(&tmpBuffer);
+					free(tmpStr);
+					char *origin_addr = getData(&tmpBuffer);
+					tmpStr = getData(&tmpBuffer);
+					int target_rank = atoi(tmpStr);
+					free(tmpStr);
+					char *target_addr = 
+					(char *) malloc((strlen(aList[target_rank].base) + 1) * sizeof(char));
+					strcpy(target_addr, aList[target_rank].base);
+					insertCommNode(&aList[target_rank], eventCode, target_rank, target_addr);
+					insertChainNode(aChain, eventCode, origin_addr);
+				}
+				else if (eventCode >= LOAD && eventCode <= STORE)
+				{
+					char *tmpBuffer = buffer;
+					char *tmpStr = getData(&tmpBuffer);
+					free(tmpStr);
+					char *varAddr = getData(&tmpBuffer);
+					insertLocaNode(&aList[index], eventCode, varAddr);
+					insertChainNode(aChain, eventCode, varAddr);
+				}
+				else 
+				{ 
+					/* do nothing */ 
+				}
+                    	}
+                        else //if (eventCode == endEvent)
+                        {
+                        	break;
+                        }
+			free(buffer);
+          	}
+		else //if (fgets(buffer, BUFFER_SIZE, pFile[i]) != NULL)
+                {
+                	/* do nothing */
+                }
+	}
+}
+
 void detectMCEInProc(Chai aChain)
 {
 	if (aChain.head == NULL && aChain.tail == NULL) 
@@ -214,7 +325,7 @@ void detectMCEInProc(Chai aChain)
 	}
 	else 
 	{
-		Loca *tmp;
+		Unif *tmp;
 		while (aChain.head != NULL)
 		{
 			aChain.tail = aChain.head;
@@ -274,17 +385,24 @@ void detectMCEInProc(Chai aChain)
 	}
 }
 
+void detectMCEAcrossProc(List *aList, int size)
+{
+	int i;
+	for (i = 0; i < size; i++)
+	{
+		//aList[i]
+	}
+}
+
 int main(int argc, char **argv)
 {
 	int size, i, index, *clock, *tmpClock, tmpInt, eventCode, j;
 	char fileName[15];
 	char *buffer, *clockStr, *tmpBuffer, *tmpStr;
-	FILE **pFile;
-	List *aList;
 
 	size = atoi(argv[1]);
-	pFile = (FILE **) malloc(size * sizeof(FILE *));
-	aList = (List *) malloc(size * sizeof(List));
+	FILE **pFile = (FILE **) malloc(size * sizeof(FILE *));
+	List *aList = (List *) malloc(size * sizeof(List));
 	for (i = 0; i < size; i++)
 	{
 		sprintf(fileName, "trace%d", i);
@@ -299,6 +417,9 @@ int main(int argc, char **argv)
 
 		tmpBuffer = buffer;
                 tmpStr = getData(&tmpBuffer);
+		free(tmpStr);
+
+		tmpStr = getData(&tmpBuffer);
 		aList[i].base = tmpStr;
 
 		tmpStr = getData(&tmpBuffer);
@@ -316,29 +437,30 @@ int main(int argc, char **argv)
 		free(buffer);
 	}
 
-	buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
 	index = 0;
 	while (index < size)
 	{
+		buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
 		if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL)
 		{              
 			printf("C1: %s", buffer);
-                        getchar();
 			if (getEventCode(buffer) == FENCE)
 			{
+				/* get Clock */
 				clockStr = (char *) malloc((size * 2 + 2) * sizeof(char));
 				memcpy(clockStr, strstr(buffer, "["), size * 2 + 1);
 				clockStr[size * 2 + 1] = '\0';
 				clock = getClock(clockStr);
+				free(buffer);
 				
 				for (i = index + 1; i < size; i++)
 				{
 					while (true)
 					{
+						buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
 						if (fgets(buffer, BUFFER_SIZE, pFile[i]) != NULL)
 						{
 							printf("C2: %s",buffer);
-							getchar();
 							if (getEventCode(buffer) == FENCE)
 							{
 								clockStr = (char *) malloc((size * 2 + 2) * sizeof(char));
@@ -350,6 +472,7 @@ int main(int argc, char **argv)
 								}
 							}
 						}
+						free(buffer);
 					}
 				}
 	
@@ -359,62 +482,71 @@ int main(int argc, char **argv)
 					aChain.rank = i;
 					aChain.head = NULL;
 					aChain.tail = NULL;
-					while (true)
-					{
-                                		if (fgets(buffer, BUFFER_SIZE, pFile[i]) != NULL)
-                                		{
-							printf("C3: %s", buffer);
-							getchar();
-							eventCode = getEventCode(buffer);
-                                        		if (eventCode != FENCE)
-							{
-								if (eventCode >= GET && eventCode <= ACCUMULATE)
-								{
-									tmpBuffer = buffer;
-									tmpStr = getData(&tmpBuffer);
-									free(tmpStr);
-									char *origin_addr = getData(&tmpBuffer);
-									tmpStr = getData(&tmpBuffer);
-									int target_rank = atoi(tmpStr);
-									free(tmpStr);
-									aList[i] = insertCommNode(aList[i], eventCode, origin_addr, 
-													target_rank, aList[target_rank].base);
-									
-									aChain = insertChainNode(aChain, eventCode, origin_addr);
-								}
-								else if (eventCode >= LOAD && eventCode <= STORE)
-								{
-									tmpBuffer = buffer;
-									tmpStr = getData(&tmpBuffer);
-									free(tmpStr);
-									char *varAddr = getData(&tmpBuffer);
-									aList[i] = insertLocaNode(aList[i], eventCode, varAddr);
-
-									aChain = insertChainNode(aChain, eventCode, varAddr);
-								}
-								else 
-								{ 
-									/* do nothing */ 
-								}
-							}
-							else //if (eventCode == FENCE)
-							{
-								break;
-							}
-						}
-                                	}
+					readEventWithinEpoch(pFile, i, aList, &aChain, FENCE);
 					
 					/* detect MCE within an epoch */
 					detectMCEInProc(aChain);
 
                         	}
 				
-				//dectect MCE accross processes
-
+				/* dectect MCE across processes */
+				freeList(aList, size);
 			}
 			
+			else if (getEventCode(buffer) == POST)
+			{
+				/* get Clock */
+                                clockStr = (char *) malloc((size * 2 + 2) * sizeof(char));
+                                memcpy(clockStr, strstr(buffer, "["), size * 2 + 1);
+                                clockStr[size * 2 + 1] = '\0';
+                                clock = getClock(clockStr);
+				
+				Chai aChain;
+                                aChain.rank = index;
+                                aChain.head = NULL;
+                                aChain.tail = NULL;
+				readEventWithinEpoch(pFile, index, aList, &aChain, WAIT);
+
+				/* detect MCE within an epoch */
+                                detectMCEInProc(aChain);
+			}
+			else if (getEventCode(buffer) == START)
+			{
+				/* get Clock */
+                                clockStr = (char *) malloc((size * 2 + 2) * sizeof(char));
+                                memcpy(clockStr, strstr(buffer, "["), size * 2 + 1);
+                                clockStr[size * 2 + 1] = '\0';
+                                clock = getClock(clockStr);
+
+                                Chai aChain;
+                                aChain.rank = index;
+                                aChain.head = NULL;
+                                aChain.tail = NULL;
+                                readEventWithinEpoch(pFile, index, aList, &aChain, COMPLETE);
+
+                                /* detect MCE within an epoch */
+                                detectMCEInProc(aChain);
+			}
+			else if (getEventCode(buffer) == LOCK)
+			{
+                                /* get Clock */
+                                clockStr = (char *) malloc((size * 2 + 2) * sizeof(char));
+                                memcpy(clockStr, strstr(buffer, "["), size * 2 + 1);
+                                clockStr[size * 2 + 1] = '\0';
+                                clock = getClock(clockStr);
+
+                                Chai aChain;
+                                aChain.rank = index;
+                                aChain.head = NULL;
+                                aChain.tail = NULL;
+                                readEventWithinEpoch(pFile, index, aList, &aChain, UNLOCK);
+
+                                /* detect MCE within an epoch */
+                                detectMCEInProc(aChain);
+			}
 			else if (getEventCode(buffer) == BARRIER)
 			{
+				//detect MCE across processes
 			}
 			else 
 			{ 
@@ -425,6 +557,7 @@ int main(int argc, char **argv)
 		{
 			index++;
 		}
+		free(buffer);
 	}
 
 	for (i = 0; i < size; i++)
@@ -434,8 +567,9 @@ int main(int argc, char **argv)
 	free(pFile);
 
 	//End Of File
-
-	free(aList);
+	//detect MCE across processes
+	printList(aList, size);
+	freeList(aList, size);
 
 	return 0;
 }
