@@ -58,6 +58,7 @@ typedef struct List {
 } List;
 
 typedef struct Chai {
+	int rank;
 	struct Loca *head;
 	struct Loca *tail;
 } Chai;

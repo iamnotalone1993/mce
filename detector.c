@@ -198,7 +198,7 @@ char *getData(char **buffer)
 	
 	tmpBuffer = *buffer;
 	*buffer = strchr(*buffer, '\t') + 1;
-        tmpInt = strcspn(tmpBuffer, "\t");
+        tmpInt = strcspn(tmpBuffer, "\t\n");
         tmpStr = (char *) malloc((tmpInt + 1) * sizeof(char));
         memcpy(tmpStr, tmpBuffer, tmpInt);
 	tmpStr[tmpInt] = '\0';
@@ -227,8 +227,8 @@ void detectMCEInProc(Chai aChain)
                                 	{
 						if (strcmp(aChain.head->varAddr, tmp->varAddr) == 0)
 						{
-                                                	printf("MCE within an epoch on %s between %s and %s\n", tmp->varAddr, 
-                                                        	convertCode2Name(aChain.head->code), convertCode2Name(tmp->code));
+                                                	printf("MCE within an epoch on %s between %s and %s in process %d\n", tmp->varAddr, 
+                                                        	convertCode2Name(aChain.head->code), convertCode2Name(tmp->code), aChain.rank);
 						}
 						else //if (strcmp(aChain.tail->varAddr, tmp->varAddr) != 0)
 						{
@@ -241,8 +241,9 @@ void detectMCEInProc(Chai aChain)
 						{
 							if (strcmp(aChain.head->varAddr, tmp->varAddr) == 0)
                                                 	{
-                                                        	printf("MCE within an epoch on %s between %s and %s\n", tmp->varAddr, 
-									convertCode2Name(aChain.head->code), convertCode2Name(tmp->code));
+                                                        	printf("MCE within an epoch on %s between %s and %s in process %d\n", 
+									tmp->varAddr, convertCode2Name(aChain.head->code), 
+										convertCode2Name(tmp->code), aChain.rank);
                                                 	}
                                                 	else //if (strcmp(aChain.tail->varAddr, tmp->varAddr) != 0)
                                                 	{
@@ -355,6 +356,7 @@ int main(int argc, char **argv)
 				for (i = index; i < size; i++)
                         	{
 					Chai aChain;
+					aChain.rank = i;
 					aChain.head = NULL;
 					aChain.tail = NULL;
 					while (true)
@@ -366,7 +368,7 @@ int main(int argc, char **argv)
 							eventCode = getEventCode(buffer);
                                         		if (eventCode != FENCE)
 							{
-								if (eventCode >= PUT && eventCode <= ACCUMULATE)
+								if (eventCode >= GET && eventCode <= ACCUMULATE)
 								{
 									tmpBuffer = buffer;
 									tmpStr = getData(&tmpBuffer);
@@ -385,8 +387,7 @@ int main(int argc, char **argv)
 									tmpBuffer = buffer;
 									tmpStr = getData(&tmpBuffer);
 									free(tmpStr);
-									char *varAddr;
-									varAddr = getData(&tmpBuffer);
+									char *varAddr = getData(&tmpBuffer);
 									aList[i] = insertLocaNode(aList[i], eventCode, varAddr);
 
 									aChain = insertChainNode(aChain, eventCode, varAddr);
