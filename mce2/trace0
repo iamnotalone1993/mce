@@ -1,0 +1,16 @@
+Create	0xbfa6648c	1	4
+Fence	[1|1|1]
+Get	0xbfa66490	1	1	0	1
+Fence	[2|2|2]
+Lock	[3|2|2]
+Store	0xbfa66490
+Put	0xbfa66490	1	1	0	1
+Unlock	[4|2|2]
+Start	[5|5|2]
+Get	0xbfa66490	1	1	0	1
+Store	0xbfa6648c
+Complete	[6|5|2]
+Lock	[7|5|2]
+Store	0xbfa66490
+Put	0xbfa66490	1	1	0	1
+Unlock	[8|5|2]

@@ -1,0 +1,16 @@
+Create	0xbfbd2bec	1	4
+Fence	[1|1|1]
+Get	0xbfbd2bf0	1	2	0	1
+Load	0xbfbd2bf0
+Fence	[2|2|2]
+Lock	[2|3|2]
+Store	0xbfbd2bf0
+Put	0xbfbd2bf0	1	0	0	1
+Unlock	[2|4|2]
+Post	[2|5|2]
+Store	0xbfbd2bec
+Wait	[6|6|2]
+Lock	[6|7|2]
+Store	0xbfbd2bf0
+Put	0xbfbd2bf0	1	0	0	1
+Unlock	[6|8|2]
