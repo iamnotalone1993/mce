@@ -1,0 +1,7 @@
+Create	0xbfaea9fc	1	4
+Fence	[1|1|1]
+Put	0xbfaeaa00	1	0	0	1
+Fence	[2|2|2]
+Lock	[2|2|3]
+Put	0xbfaeaa00	1	1	0	1
+Unlock	[2|2|4]
