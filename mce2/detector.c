@@ -135,6 +135,17 @@ bool equalClock(int *clock1, int *clock2, int size)
 	return true;
 }
 
+void printClock(int *clock, int size)
+{
+	int i;
+	printf("clock=[");
+	for (i = 0; i < size - 1; i++)
+	{
+		printf("%d|", clock[i]);
+	}
+	printf("%d]\n", clock[i]);
+}
+
 char *getData(char **buffer)
 {
 	char *tmpBuffer, *tmpStr;
@@ -266,12 +277,7 @@ void printNode(Node *aNode, int size)
 {
 	printf("Printing a Node...\n");
 	int i;
-	printf("clock=[");
-	for (i = 0; i < size - 1; i++)
-	{
-		printf("%d|", aNode->clock[i]);
-	}
-	printf("%d]\n", aNode->clock[i]);
+	printClock(aNode->clock, size);
 	
 	Comm *commTmp = aNode->commHead;
 	while (commTmp != NULL)
@@ -398,8 +404,8 @@ void readEventWithinEpoch(FILE **pFile, int index, List **aList, Chai *aChain, i
         	char *buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
         	if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL)
                 {
-			printf("C3: %s", buffer);
-			getchar();
+			//printf("C3: %s", buffer);
+			//getchar();
                 	int eventCode = getEventCode(buffer);
                        	if (eventCode != endEvent)
                         {
@@ -473,7 +479,7 @@ void detectMCEInProc(Chai *aChain)
                                 	{
 						if (strcmp(aChain->head->varAddr, tmp->varAddr) == 0)
 						{
-                                                	printf("MCE within an epoch on %s between %s and %s in process %d\n",
+                                                	printf("MCE within an epoch on %s between %s and %s in P%d\n",
 									tmp->varAddr, convertCode2Name(aChain->head->code),
 										convertCode2Name(tmp->code), aChain->rank);
 						}
@@ -488,7 +494,7 @@ void detectMCEInProc(Chai *aChain)
 						{
 							if (strcmp(aChain->head->varAddr, tmp->varAddr) == 0)
                                                 	{
-                                                        	printf("MCE within an epoch on %s between %s and %s in process %d\n", 
+                                                        	printf("MCE within an epoch on %s between %s and %s in P%d\n", 
 										tmp->varAddr, convertCode2Name(aChain->head->code), 
 											convertCode2Name(tmp->code), aChain->rank);
                                                 	}
@@ -557,8 +563,7 @@ void detectMCEAcrossProc(List **aList, int size)
 								if (commTmp1->target_rank == commTmp2->target_rank &&
 									strcmp(commTmp1->target_addr, commTmp2->target_addr) == 0)
 								{
-                                        				printf("MCE across processes on %s in %d between %s \
-										 in process %d and %s in process %d\n",
+                                        				printf("MCE across processes on %s in P%d between %s in P%d and %s in P%d\n",
                                                         			commTmp1->target_addr, commTmp1->target_rank,
 										convertCode2Name(commTmp1->code), i,
 										convertCode2Name(commTmp2->code), j);
@@ -567,8 +572,8 @@ void detectMCEAcrossProc(List **aList, int size)
 								{
 									//do nothing
 								}
+								commTmp2 = commTmp2->next;
 							}
-							commTmp1 = commTmp1->next;
 							
 							locaTmp2 = nodeTmp2->locaHead;
 							while (locaTmp2 != NULL)
@@ -576,8 +581,7 @@ void detectMCEAcrossProc(List **aList, int size)
 								if (commTmp1->target_rank == j &&
 									strcmp(commTmp1->target_addr, locaTmp2->varAddr) == 0)
 								{
-									printf("MCE across processes on %s in %d between %s \
-										in process %d and %s in process %d\n",
+									printf("MCE across processes on %s in P%d between %s in P%d and %s in P%d\n",
                                                         			commTmp1->target_addr, j,
 										convertCode2Name(commTmp1->code), i,
                                                                         	convertCode2Name(locaTmp2->code), j);
@@ -588,6 +592,7 @@ void detectMCEAcrossProc(List **aList, int size)
 								}
 								locaTmp2 = locaTmp2->next;
 							}
+							commTmp1 = commTmp1->next;
 						}
 
 						locaTmp1 = nodeTmp1->locaHead;
@@ -599,11 +604,10 @@ void detectMCEAcrossProc(List **aList, int size)
 								if (commTmp2->target_rank == i &&
                                                                         strcmp(commTmp2->target_addr, locaTmp1->varAddr) == 0)
 								{
-                                                                        printf("MCE across processes on %s in %d between %s \
-                                                                                in process %d and %s in process %d\n",
+                                                                        printf("MCE across processes on %s in P%d between %s in P%d and %s in P%d\n",
                                                                                 commTmp2->target_addr, i,
-                                                                                convertCode2Name(commTmp2->code), j,
-                                                                                convertCode2Name(locaTmp1->code), i);
+										convertCode2Name(locaTmp1->code), i,
+                                                                                convertCode2Name(commTmp2->code), j);
 								}
 								else
 								{
@@ -668,7 +672,7 @@ int main(int argc, char **argv)
 		buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
 		if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL)
 		{              
-			printf("C1: %s", buffer);
+			//printf("C1: %s", buffer);
 			if (getEventCode(buffer) == FENCE)
 			{
 				clock = getClock(buffer, size);
@@ -683,7 +687,7 @@ int main(int argc, char **argv)
 						buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
 						if (fgets(buffer, BUFFER_SIZE, pFile[i]) != NULL)
 						{
-							printf("C2: %s",buffer);
+							//printf("C2: %s",buffer);
 							if (getEventCode(buffer) == FENCE)
 							{
 								clock = getClock(buffer, size);
@@ -762,6 +766,7 @@ int main(int argc, char **argv)
 			{
 				//detect MCE across processes
 				detectMCEAcrossProc(aList, size);
+				freeAllList(aList, size);
 			}
 			else 
 			{ 

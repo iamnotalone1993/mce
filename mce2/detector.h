@@ -65,6 +65,8 @@ int getEventCode(char *);
 char *convertCode2Name(int);
 int *getClock(char *, int);
 bool equalClock(int *, int *, int);
+char *getData(char **);
+void printClock(int *, int);
 int isConcurrent(int *, int, int *, int);
 
 Comm *initComm(int, int, char *);
