@@ -23,12 +23,6 @@
 #define	STORE			13
 #define CREATE			14
 
-/*typedef struct {
-        int code;
-        int *clock;
-        void *next;
-} Sync;*/
-
 typedef struct Comm {
         int code;
 	int target_rank;
