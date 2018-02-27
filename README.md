@@ -1,2 +1,2 @@
-# A Clock-based Approach to Dectect Memory Consistency Errors in MPI One-sided Communication
+# A Clock-Based Approach to Detect Memory Consistency Errors in MPI One-Sided Communication
 ## References
