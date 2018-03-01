@@ -2,38 +2,54 @@
 
 int getEventCode(char *str)
 {
-	if (strstr(str, "Fence") != NULL)
-		return FENCE;
-	if (strstr(str, "Barrier") != NULL)
-		return BARRIER;
-	if (strstr(str, "Put") != NULL)
-		return PUT;
-	if (strstr(str, "Get") != NULL)
-		return GET;
-	if (strstr(str, "Accumulate") != NULL)
-		return ACCUMULATE;
-	if (strstr(str, "Post") != NULL)
-		return POST;
-	if (strstr(str, "Start") != NULL)
-		return START;
-	if (strstr(str, "Complete") != NULL)
-		return COMPLETE;
-	if (strstr(str, "Wait") != NULL)
-		return WAIT;
-	if (strstr(str, "Lock") != NULL)
-		return LOCK;
-	if (strstr(str, "Unlock") != NULL)
-		return UNLOCK;
-	if (strstr(str, "Send") != NULL)
-		return SEND;
-	if (strstr(str, "Recv") != NULL)
-		return RECV;
-	if (strstr(str, "Load") != NULL)
-		return LOAD;
-	if (strstr(str, "Store") != NULL)
-		return STORE;
-	if (strstr(str, "Create") != NULL)
-		return CREATE;
+	int i = 0;
+	switch (str[i])
+	{
+                case 'L':
+                        i = i + 2;
+                        if (str[i] == 'a')
+                                return LOAD;
+                        else //if (str[i] == 'c')
+                                return LOCK;
+                case 'S':
+                        i++;
+                        if (str[i] == 'e')
+                                return SEND;
+                        else //if (str[i] == 't')
+                        {
+                                i++;
+                                if (str[i] == 'o')
+                                        return STORE;
+                                else //if (str[i] == 'a')
+                                        return START;
+                        }
+		case 'G':
+                        return GET;
+                case 'P':
+                        i++;
+                        if (str[i] == 'u')
+                                return PUT;
+                        else //if (str[i] == 'o')
+                                return POST;
+		case 'A':
+			return ACCUMULATE;
+		case 'B':
+			return BARRIER;
+		case 'C':
+			i++;
+			if (str[i] == 'o')
+				return COMPLETE;
+			else //if (str[i] == 'r');
+				return CREATE;
+		case 'F':
+			return FENCE;
+		case 'R':
+			return RECV;
+		case 'U':
+			return UNLOCK;
+		case 'W':
+			return WAIT;
+	}
 }
 
 char *convertCode2Name(int code)
@@ -110,15 +126,24 @@ char *convertCode2Name(int code)
 
 int *getClock(char *buffer, int size)
 {
-	char *clockStr = (char *) malloc((size * 2 + 2) * sizeof(char));
-      	memcpy(clockStr, strstr(buffer, "["), size * 2 + 1);
-        clockStr[size * 2 + 1] = '\0';
+	char *head = strstr(buffer, "[");
+	char *tail = strstr(head, "]");
+	int length = (int) (tail - head);
+	char *clockStr = (char *) malloc((length) * sizeof(char));
+      	memcpy(clockStr, head, length);
 	int *clock = (int *) malloc(size * sizeof(int));
+	head = strchr(clockStr, '[') + 1;
 	int i;
 	for (i = 0; i < size; i++)
 	{
-		clock[i] = clockStr[i * 2 + 1] - '0';
+		length = strspn(head, "0123456789");
+		tail = (char *) malloc(length * sizeof(char));
+		memcpy(tail, head, length);
+		clock[i] = atoi(tail);
+		free(tail);
+		head = strpbrk(head, "|]") + 1;
 	}
+	free(clockStr);
 	return clock;
 }
 
@@ -673,6 +698,7 @@ int main(int argc, char **argv)
 		if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL)
 		{              
 			//printf("C1: %s", buffer);
+			//getchar();
 			if (getEventCode(buffer) == FENCE)
 			{
 				clock = getClock(buffer, size);
@@ -688,6 +714,7 @@ int main(int argc, char **argv)
 						if (fgets(buffer, BUFFER_SIZE, pFile[i]) != NULL)
 						{
 							//printf("C2: %s",buffer);
+							//getchar();
 							if (getEventCode(buffer) == FENCE)
 							{
 								clock = getClock(buffer, size);
@@ -725,6 +752,7 @@ int main(int argc, char **argv)
                         	}
 				
 				/* dectect MCE across processes */
+				//printAllList(aList, size);
 				detectMCEAcrossProc(aList, size);
 				freeAllList(aList, size);
 			}
@@ -765,6 +793,7 @@ int main(int argc, char **argv)
 			else if (getEventCode(buffer) == BARRIER)
 			{
 				//detect MCE across processes
+				//printAllList(aList, size);
 				detectMCEAcrossProc(aList, size);
 				freeAllList(aList, size);
 			}
@@ -788,6 +817,7 @@ int main(int argc, char **argv)
 
 	//End Of File
 	//detect MCE across processes
+	//printAllList(aList, size);
 	detectMCEAcrossProc(aList, size);
 	freeAllList(aList, size);
 
