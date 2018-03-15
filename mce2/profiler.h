@@ -6,12 +6,15 @@
 #include <stdlib.h> 
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 int *clock;
+int memUsage;
 double execTime;
 FILE *fp;
 MPI_Group startGroup, postGroup;
 
+int getMemory();
 void printClock(int *);
 void tracels(bool, void *);
 

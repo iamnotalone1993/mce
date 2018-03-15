@@ -1,5 +1,39 @@
 #include "profiler.h"
 
+int getMemory()
+{
+	char *tmp, *tmp1, *fileName;
+	int result, pid;
+	fileName = (char *) malloc(25 * sizeof(char));
+	pid = getpid();
+	sprintf(fileName, "/proc/%d/status", pid);
+	FILE *pFile = fopen(fileName, "r");
+	free(fileName);
+	char *buffer = (char *) malloc(50 * sizeof(char));
+	while (fgets(buffer, 50, pFile) != NULL)
+	{
+		if (strstr(buffer, "VmRSS:") != NULL)
+		{
+			tmp = strpbrk(buffer, "0123456789");
+			result = strcspn(tmp, " \t");
+			tmp1 = (char *) malloc((result + 1) * sizeof(char));
+			memcpy(tmp1, tmp, result);
+			tmp1[result] = '\0';
+			result = atoi(tmp1);
+			free(tmp1);
+			break;	
+		}
+		else 
+		{
+			free(buffer);
+			buffer = (char *) malloc(50 * sizeof(char));
+		}
+	}
+	free(buffer);
+	fclose(pFile);
+	return result;
+}
+
 void printClock(int *a)
 {
 	int size, i;
@@ -38,6 +72,7 @@ int MPI_Init(int *argc, char ***argv)
 	sprintf(fileName, "trace%d", rank);
 	fp = fopen(fileName, "w");
 	clock = (int *) malloc(size * sizeof(int));
+	memUsage = getMemory();
 	for (i = 0; i < size; i++) 
 	{
 		clock[i] = 0;
@@ -50,16 +85,18 @@ int MPI_Init(int *argc, char ***argv)
 
 int MPI_Finalize()
 {
-	int result, rank;
+	int result, rank, totalMemUsage;
 	double maxTime;
 
 	PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	execTime = MPI_Wtime() - execTime;
 	PMPI_Reduce(&execTime, &maxTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+	PMPI_Reduce(&memUsage, &totalMemUsage, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 	if (rank == 0)
 	{
 		printf("Execution Time = %f seconds.\n", maxTime);
+		printf("Memory Usage = %d kB.\n", totalMemUsage);
 	}
 	result = PMPI_Finalize();
 
@@ -149,6 +186,8 @@ int MPI_Win_post(MPI_Group group, int assert, MPI_Win win)
 	PMPI_Group_size(group, &groupSize);
 	worldRanks = (int *) malloc(groupSize * sizeof(int));
 	groupRanks = (int *) malloc(groupSize * sizeof(int));
+	int tmp = getMemory();
+	memUsage = (tmp > memUsage) ? tmp : memUsage;
 	for (i = 0; i < groupSize; i++)
 	{
 		groupRanks[i] = i;
@@ -192,6 +231,8 @@ int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
 		groupRanks[i] = i;
 	}
 	tmpClock = (int *) malloc(size * sizeof(int));
+	int tmp = getMemory();
+	memUsage = (tmp > memUsage) ? tmp : memUsage;
 	PMPI_Group_translate_ranks(group, groupSize, groupRanks, worldGroup, worldRanks);
 	for (i = 0; i < groupSize; i++)
 	{
@@ -229,6 +270,8 @@ int MPI_Win_complete(MPI_Win win)
 	PMPI_Group_size(startGroup, &groupSize);
 	worldRanks = (int *) malloc(groupSize * sizeof(int));
         groupRanks = (int *) malloc(groupSize * sizeof(int));
+	int tmp = getMemory();
+	memUsage = (tmp > memUsage) ? tmp : memUsage;
 	for (i = 0; i < groupSize; i++)
 	{
 		groupRanks[i] = i;
@@ -270,6 +313,8 @@ int MPI_Win_wait(MPI_Win win)
 		groupRanks[i] = i;
 	}
 	tmpClock = (int *) malloc(size * sizeof(int));
+	int tmp = getMemory();
+	memUsage = (tmp > memUsage) ? tmp : memUsage;
 	PMPI_Group_translate_ranks(postGroup, groupSize, groupRanks, worldGroup, worldRanks);
 	for (i = 0; i < groupSize; i++)
 	{
@@ -343,6 +388,8 @@ int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, M
 	PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	PMPI_Comm_size(MPI_COMM_WORLD, &size);
 	tmpClock = (int *) malloc(size * sizeof(int));
+	int tmp = getMemory();
+	memUsage = (tmp > memUsage) ? tmp : memUsage;
         clock[rank] = clock[rank] + 1;
 	PMPI_Recv(tmpClock, size, MPI_INT, source, tag, comm, status);
 	for (i = 0; i < size; i++)
