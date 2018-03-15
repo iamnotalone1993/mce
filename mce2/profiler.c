@@ -31,6 +31,7 @@ int MPI_Init(int *argc, char ***argv)
 	char fileName[15];
 
 	result = PMPI_Init(argc, argv);
+	execTime = PMPI_Wtime();
 
 	PMPI_Comm_size(MPI_COMM_WORLD, &size);
         PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -49,8 +50,17 @@ int MPI_Init(int *argc, char ***argv)
 
 int MPI_Finalize()
 {
-	int result;
+	int result, rank;
+	double maxTime;
 
+	PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	execTime = MPI_Wtime() - execTime;
+	PMPI_Reduce(&execTime, &maxTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+	if (rank == 0)
+	{
+		printf("Execution Time = %f seconds.\n", maxTime);
+	}
 	result = PMPI_Finalize();
 
 	fclose(fp);

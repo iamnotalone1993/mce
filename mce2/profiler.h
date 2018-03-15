@@ -8,6 +8,7 @@
 #include <stdbool.h>
 
 int *clock;
+double execTime;
 FILE *fp;
 MPI_Group startGroup, postGroup;
 
