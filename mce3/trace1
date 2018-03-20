@@ -1,0 +1,13 @@
+Create	0xbfa84e8c	1	4
+Fence
+Get	0xbfa84e90	1	2	0	1
+Fence
+Lock
+Put	0xbfa84e90	1	0	0	1
+Unlock
+Post
+Store	0xbfa84e8c
+Wait
+Lock
+Put	0xbfa84e90	1	0	0	1
+Unlock

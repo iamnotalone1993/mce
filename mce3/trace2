@@ -1,0 +1,7 @@
+Create	0xbfb1838c	1	4
+Fence
+Put	0xbfb18390	1	0	0	1
+Fence
+Lock
+Put	0xbfb18390	1	1	0	1
+Unlock
