@@ -61,10 +61,18 @@ typedef struct Chai {
 	struct Loca *tail;
 } Chai;
 
+typedef struct Int {
+	int num;
+	struct Int *next;
+} Int;
+
+typedef struct IntList {
+	Int *head;
+	Int *tail;
+} IntList;
+
 int getEventCode(char *);
 char *convertCode2Name(int);
-int *getClock(char *, int);
-bool equalClock(int *, int *, int);
 char *getData(char **);
 void printClock(int *, int);
 int isConcurrent(int *, int, int *, int);
@@ -94,7 +102,14 @@ Chai *initChain(int);
 void insertChain(Chai *, Loca *);
 void printChain(Chai *);
 
-void readEventWithinEpoch(FILE **, int, List **, Chai *, int);
+Int *initInt(int);
+void freeInt(Int *);
+
+IntList *initIntList();
+void insertIntList(IntList *, Int *);
+int removeIntList(IntList *);
+
+void readEventWithinEpoch(FILE **, int, int **, int, List **, Chai *, int);
 void detectMCEInProc(Chai *);
 void detectMCEAcrossProc(List **, int);
 

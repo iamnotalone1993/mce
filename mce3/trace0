@@ -1,14 +1,14 @@
-Create	0xbfa1b97c	1	4
+Create	0xbfe4508c	1	4
 Fence
-Get	0xbfa1b980	1	1	0	1
+Get	0xbfe45090	1	1	0	1
 Fence
 Lock
-Put	0xbfa1b980	1	1	0	1
+Put	0xbfe45090	1	1	0	1
 Unlock
-Start
-Get	0xbfa1b980	1	1	0	1
-Store	0xbfa1b97c
+Start	1
+Get	0xbfe45090	1	1	0	1
+Store	0xbfe4508c
 Complete
 Lock
-Put	0xbfa1b980	1	1	0	1
+Put	0xbfe45090	1	1	0	1
 Unlock

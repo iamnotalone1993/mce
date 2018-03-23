@@ -124,42 +124,6 @@ char *convertCode2Name(int code)
         }
 }
 
-int *getClock(char *buffer, int size)
-{
-	char *head = strstr(buffer, "[");
-	char *tail = strstr(head, "]");
-	int length = (int) (tail - head);
-	char *clockStr = (char *) malloc((length) * sizeof(char));
-      	memcpy(clockStr, head, length);
-	int *clock = (int *) malloc(size * sizeof(int));
-	head = strchr(clockStr, '[') + 1;
-	int i;
-	for (i = 0; i < size; i++)
-	{
-		length = strspn(head, "0123456789");
-		tail = (char *) malloc(length * sizeof(char));
-		memcpy(tail, head, length);
-		clock[i] = atoi(tail);
-		free(tail);
-		head = strpbrk(head, "|]") + 1;
-	}
-	free(clockStr);
-	return clock;
-}
-
-bool equalClock(int *clock1, int *clock2, int size)
-{
-	int i;
-	for (i = 0; i < size; i++)
-	{
-		if (clock1[i] != clock2[i])
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
 void printClock(int *clock, int size)
 {
 	int i;
@@ -173,15 +137,19 @@ void printClock(int *clock, int size)
 
 char *getData(char **buffer)
 {
-	char *tmpBuffer, *tmpStr;
+	char *tmpBuffer, *tmpStr = NULL;
 	int tmpInt;
-	
+
 	tmpBuffer = *buffer;
-	*buffer = strchr(*buffer, '\t') + 1;
-        tmpInt = strcspn(tmpBuffer, "\t\n");
-        tmpStr = (char *) malloc((tmpInt + 1) * sizeof(char));
+	*buffer = strchr(*buffer, '\t');
+	if (*buffer != NULL)
+	{
+		(*buffer)++;
+	}
+	tmpInt = strcspn(tmpBuffer, "\t\n");
+	tmpStr = (char *) malloc((tmpInt + 1) * sizeof(char));
         memcpy(tmpStr, tmpBuffer, tmpInt);
-	tmpStr[tmpInt] = '\0';
+        tmpStr[tmpInt] = '\0';
 
 	return tmpStr;
 }
@@ -227,8 +195,9 @@ void insertCommNode(Node *aNode, Comm* aComm)
 
 void printComm(Comm *aComm)
 {
-	printf("code=%s target_rank=%d target_addr=%s\n", 
-			convertCode2Name(aComm->code), aComm->target_rank, aComm->target_addr);
+	char *code = convertCode2Name(aComm->code);
+	printf("code=%s target_rank=%d target_addr=%s\n", code, aComm->target_rank, aComm->target_addr);
+	free(code);
 }
 
 Loca *initLoca(int code, char *varAddr)
@@ -262,7 +231,9 @@ void insertLocaNode(Node *aNode, Loca *aLoca)
 
 void printLoca(Loca *aLoca)
 {
-	printf("code=%s varAddr=%s\n", convertCode2Name(aLoca->code), aLoca->varAddr);
+	char *code = convertCode2Name(aLoca->code);
+	printf("code=%s varAddr=%s\n", code, aLoca->varAddr);
+	free(code);
 }
 
 Node *initNode(int *clock)
@@ -412,17 +383,74 @@ void insertChain(Chai *aChain, Loca *aLoca)
 
 void printChain(Chai *aChain)
 {
+	char *code;
 	printf("\nPrinting a Chain...\n");
 	printf("rank=%d\n", aChain->rank);
 	Loca *tmp = aChain->head;
 	while (tmp != NULL)
 	{
-		printf("code=%s varAddr=%s\n", convertCode2Name(tmp->code), tmp->varAddr);
+		code = convertCode2Name(tmp->code);
+		printf("code=%s varAddr=%s\n", code, tmp->varAddr);
+		free(code);
 		tmp = tmp->next;
 	}
 }
 
-void readEventWithinEpoch(FILE **pFile, int index, List **aList, Chai *aChain, int endEvent)
+Int *initInt(int num)
+{
+	Int *aInt = (Int *) malloc(sizeof(Int));
+	aInt->num = num;
+	aInt->next = NULL;
+	return aInt;
+}
+
+void freeInt(Int *aInt)
+{
+	free(aInt);
+}
+
+IntList *initIntList()
+{
+	IntList *aIntList = (IntList *) malloc(sizeof(IntList));
+	aIntList->head = NULL;
+	aIntList->tail = NULL;
+}
+
+void insertIntList(IntList *aIntList, Int *aInt)
+{
+        if (aIntList->head == NULL && aIntList->tail == NULL)
+        {
+                aIntList->tail = aInt;
+                aIntList->head = aIntList->tail;
+        }
+        else
+        {
+                aIntList->tail->next = aInt;
+                aIntList->tail = aIntList->tail->next;
+        }
+}
+
+int removeIntList(IntList *aIntList)
+{
+	if (aIntList->head == NULL)
+	{
+		return -1;
+	}
+	else //if (aIntList->head != NULL)
+	{
+		int tmp = aIntList->head->num;
+		Int *tmpInt = aIntList->head;
+		aIntList->head = aIntList->head->next;
+		if (aIntList->head == aIntList->tail)
+		{
+			aIntList->tail = NULL;
+		}
+		freeInt(tmpInt);
+		return tmp;
+	}
+}
+
+void readEventWithinEpoch(FILE **pFile, int index, int **clock, int size, List **aList, Chai *aChain, int endEvent)
 {
 	while (true)
         {
@@ -472,6 +500,7 @@ void readEventWithinEpoch(FILE **pFile, int index, List **aList, Chai *aChain, i
                     	}
                         else //if (eventCode == endEvent)
                         {
+				clock[index][index]++;
                         	break;
                         }
           	}
@@ -504,9 +533,12 @@ void detectMCEInProc(Chai *aChain)
                                 	{
 						if (strcmp(aChain->head->varAddr, tmp->varAddr) == 0)
 						{
+							char *code1 = convertCode2Name(aChain->head->code);
+							char *code2 = convertCode2Name(tmp->code);
                                                 	printf("MCE within an epoch on %s between %s and %s in P%d\n",
-									tmp->varAddr, convertCode2Name(aChain->head->code),
-										convertCode2Name(tmp->code), aChain->rank);
+											tmp->varAddr, code1, code2, aChain->rank);
+							free(code1);
+							free(code2);
 						}
 						else //if (strcmp(aChain.tail->varAddr, tmp->varAddr) != 0)
 						{
@@ -519,9 +551,12 @@ void detectMCEInProc(Chai *aChain)
 						{
 							if (strcmp(aChain->head->varAddr, tmp->varAddr) == 0)
                                                 	{
+								char *code1 = convertCode2Name(aChain->head->code);
+								char *code2 = convertCode2Name(tmp->code);
                                                         	printf("MCE within an epoch on %s between %s and %s in P%d\n", 
-										tmp->varAddr, convertCode2Name(aChain->head->code), 
-											convertCode2Name(tmp->code), aChain->rank);
+												tmp->varAddr, code1, code2, aChain->rank);
+								free(code1);
+								free(code2);
                                                 	}
                                                 	else //if (strcmp(aChain.tail->varAddr, tmp->varAddr) != 0)
                                                 	{
@@ -588,10 +623,13 @@ void detectMCEAcrossProc(List **aList, int size)
 								if (commTmp1->target_rank == commTmp2->target_rank &&
 									strcmp(commTmp1->target_addr, commTmp2->target_addr) == 0)
 								{
+									char *code1 = convertCode2Name(commTmp1->code);
+									char *code2 = convertCode2Name(commTmp2->code);
                                         				printf("MCE across processes on %s in P%d between %s in P%d and %s in P%d\n",
-                                                        			commTmp1->target_addr, commTmp1->target_rank,
-										convertCode2Name(commTmp1->code), i,
-										convertCode2Name(commTmp2->code), j);
+                                                        			commTmp1->target_addr, commTmp1->target_rank, 
+										code1, i, code2, j);
+									free(code1);
+									free(code2);
 								}
 								else
 								{
@@ -606,10 +644,12 @@ void detectMCEAcrossProc(List **aList, int size)
 								if (commTmp1->target_rank == j &&
 									strcmp(commTmp1->target_addr, locaTmp2->varAddr) == 0)
 								{
+									char *code1 = convertCode2Name(commTmp1->code);
+									char *code2 = convertCode2Name(locaTmp2->code);
 									printf("MCE across processes on %s in P%d between %s in P%d and %s in P%d\n",
-                                                        			commTmp1->target_addr, j,
-										convertCode2Name(commTmp1->code), i,
-                                                                        	convertCode2Name(locaTmp2->code), j);
+                                                        				commTmp1->target_addr, j, code1, i, code2, j);
+									free(code1);
+									free(code2);
 								}
 								else
 								{
@@ -629,10 +669,12 @@ void detectMCEAcrossProc(List **aList, int size)
 								if (commTmp2->target_rank == i &&
                                                                         strcmp(commTmp2->target_addr, locaTmp1->varAddr) == 0)
 								{
+									char *code1 = convertCode2Name(locaTmp1->code);
+									char *code2 = convertCode2Name(commTmp2->code);
                                                                         printf("MCE across processes on %s in P%d between %s in P%d and %s in P%d\n",
-                                                                                commTmp2->target_addr, i,
-										convertCode2Name(locaTmp1->code), i,
-                                                                                convertCode2Name(commTmp2->code), j);
+                                                                                	commTmp2->target_addr, i, code1, i, code2, j);
+									free(code1);
+									free(code2);
 								}
 								else
 								{
@@ -653,20 +695,30 @@ void detectMCEAcrossProc(List **aList, int size)
 
 int main(int argc, char **argv)
 {
-	int size, i, index, *clock, *tmpClock, tmpInt, eventCode, j;
+	int size, i, index, **clock, *tmpClock, tmpInt, eventCode, j, post;
 	char fileName[15];
-	char *buffer, *tmpBuffer, *tmpStr;
+	char *buffer, *tmpBuffer, *tmpStr, *pscw;
+	IntList *aIntList;
 
+	post = -1;
 	size = atoi(argv[1]);
+	pscw = (char *) malloc(size * sizeof(char));
 	FILE **pFile = (FILE **) malloc(size * sizeof(FILE *));
 	List **aList = (List **) malloc(size * sizeof(List *));
+	clock = (int **) malloc(size * sizeof(int *));
 	for (i = 0; i < size; i++)
-	{
+	{	
+		pscw[i] = 'N';
 		sprintf(fileName, "trace%d", i);
 		pFile[i] = fopen(fileName, "r");
 		if (pFile[i] == NULL)
 		{
 			perror("Error opening file");
+		}
+		clock[i] = (int *) malloc(size * sizeof(int));
+		for (j = 0; j < size; j++)
+		{
+			clock[i][j] = 0;
 		}
 
 		buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
@@ -682,7 +734,7 @@ int main(int argc, char **argv)
 		tmpStr = getData(&tmpBuffer);
 		int size = atoi(tmpStr);
 		free(tmpStr);
-
+		
 		tmpStr = getData(&tmpBuffer);
 		int disp_unit = atoi(tmpStr);
 		free(tmpStr);
@@ -694,131 +746,248 @@ int main(int argc, char **argv)
 	index = 0;
 	while (index < size)
 	{
-		buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
-		if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL)
-		{              
-			//printf("C1: %s", buffer);
-			//getchar();
-			if (getEventCode(buffer) == FENCE)
-			{
-				clock = getClock(buffer, size);
-				Node *aNode = initNode(clock);
-				insertList(aList[index], aNode);
-				free(buffer);
-				
-				for (i = index + 1; i < size; i++)
+		if (pscw[index] == 'N')
+		{
+			buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
+			if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL)
+			{              
+				printf("C1: %s", buffer);
+				getchar();
+				int eventCode = getEventCode(buffer);
+				if (eventCode == FENCE)
 				{
-					while (true)
+					clock[index][index]++;
+					free(buffer);
+			
+					for (i = index + 1; i < size; i++)
 					{
-						buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
-						if (fgets(buffer, BUFFER_SIZE, pFile[i]) != NULL)
+						while (true)
 						{
-							//printf("C2: %s",buffer);
-							//getchar();
-							if (getEventCode(buffer) == FENCE)
+							buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
+							if (fgets(buffer, BUFFER_SIZE, pFile[i]) != NULL)
 							{
-								clock = getClock(buffer, size);
-								if (equalClock(aList[index]->head->clock, clock, size) == true)
+								//printf("C2: %s",buffer);
+								//getchar();
+								if (getEventCode(buffer) == FENCE)
 								{
-									Node *aNode = initNode(clock);
-									insertList(aList[i], aNode);
+									clock[i][i]++;
+									free(buffer);
 									break;
 								}
-								else //if (equalClock(aList[index].clock, clock, size) == false)
+								else //if (getEventCode(buffer) != FENCE)
 								{
-									free(clock);
+									//do nothing
 								}
 							}
-							else //if (getEventCode(buffer) != FENCE)
+							else //if (fgets(buffer, BUFFER_SIZE, pFile[i]) == NULL)
 							{
 								//do nothing
 							}
+							free(buffer);
 						}
-						else //if (fgets(buffer, BUFFER_SIZE, pFile[i]) == NULL)
+					}
+
+					for (i = index; i < size; i++)
+					{
+						for (j = index; j < size; j++)
 						{
-							//do nothing
+							if (i != j)
+							{
+								clock[i][j] = clock[j][j];
+							}
 						}
-						free(buffer);
+						tmpClock = (int *) malloc(size * sizeof(int));
+			                        for (j = 0; j < size; j++)
+			                        {
+			                        	tmpClock[j] = clock[index][j];
+			                        }
+						Node *aNode = initNode(tmpClock);
+						insertList(aList[i], aNode);
+					}
+
+					for (i = index; i < size; i++)
+			        	{
+						Chai *aChain = initChain(i);	
+						readEventWithinEpoch(pFile, i, clock, size, aList, aChain, FENCE);
+				
+						/* detect MCE within an epoch */
+						//printChain(aChain);
+						detectMCEInProc(aChain);
+			        	}
+
+					for (i = index; i < size; i++)
+					{
+					        for (j = index; j < size; j++)
+			                        {
+			                                if (i != j)
+			                                {
+			                                        clock[i][j] = clock[j][j];
+			                                }
+			                        }
+
+					}
+			
+					/* dectect MCE across processes */
+					//printAllList(aList, size);
+					detectMCEAcrossProc(aList, size);
+					freeAllList(aList, size);
+				}
+				else if (eventCode == POST)
+				{
+					printf("C3\n");
+					getchar();
+					pscw[index] = 'P';
+					post = index;
+					clock[index][index]++;
+
+		                        tmpBuffer = buffer;
+		                        tmpStr = getData(&tmpBuffer);
+		                        free(tmpStr);
+		                        aIntList = initIntList();
+		                        while (tmpBuffer != NULL)
+		                        {
+		                                tmpStr = getData(&tmpBuffer);
+		                                Int *aInt = initInt(atoi(tmpStr));
+		                                insertIntList(aIntList, aInt);
+		                                free(tmpStr);
 					}
 				}
-	
-				for (i = index; i < size; i++)
-                        	{
-					Chai *aChain = initChain(i);	
-					readEventWithinEpoch(pFile, i, aList, aChain, FENCE);
-					
-					/* detect MCE within an epoch */
-					//printChain(aChain);
-					detectMCEInProc(aChain);
-                        	}
-				
-				/* dectect MCE across processes */
-				//printAllList(aList, size);
-				detectMCEAcrossProc(aList, size);
-				freeAllList(aList, size);
-			}
-			
-			else if (getEventCode(buffer) == POST)
-			{
-				clock = getClock(buffer, size);
-				Node *aNode = initNode(clock);
-				insertList(aList[index], aNode);
-				Chai *aChain = initChain(index);
-				readEventWithinEpoch(pFile, index, aList, aChain, WAIT);
-				
-				/* detect MCE within an epoch */
-                                detectMCEInProc(aChain);
-			}
-			else if (getEventCode(buffer) == START)
-			{
-				clock = getClock(buffer, size);
-				Node *aNode = initNode(clock);
-				insertList(aList[index], aNode);
-                                Chai *aChain = initChain(index);
-                                readEventWithinEpoch(pFile, index, aList, aChain, COMPLETE);
+				else if (eventCode == START)
+				{
+					printf("C2\n");
+					getchar();
+					pscw[index] = 'S';
+					if (post < 0)
+					{
+						tmpBuffer = buffer;
+						tmpStr = getData(&tmpBuffer);
+						free(tmpStr);
+						tmpStr = getData(&tmpBuffer);
+						index = atoi(tmpStr);
+						free(tmpStr);
+					}
+				}
+				else if (eventCode == LOCK)
+				{
+					clock[index][index]++;
+			                tmpClock = (int *) malloc(size * sizeof(int));
+			                for (j = 0; j < size; j++)
+			                {
+			                        tmpClock[j] = clock[index][j];
+			                }
+					Node *aNode = initNode(tmpClock);
+					insertList(aList[index], aNode);
+					Chai *aChain = initChain(index);
+			                readEventWithinEpoch(pFile, index, clock, size, aList, aChain, UNLOCK);
 
-                                /* detect MCE within an epoch */
-                                detectMCEInProc(aChain);
-			}
-			else if (getEventCode(buffer) == LOCK)
-			{
-				clock = getClock(buffer, size);
-				Node *aNode = initNode(clock);
-				insertList(aList[index], aNode);
-				Chai *aChain = initChain(index);
-                                readEventWithinEpoch(pFile, index, aList, aChain, UNLOCK);
-
-                                /* detect MCE within an epoch */
-                                detectMCEInProc(aChain);
-			}
-			else if (getEventCode(buffer) == BARRIER)
-			{
-				//detect MCE across processes
-				//printAllList(aList, size);
-				detectMCEAcrossProc(aList, size);
-				freeAllList(aList, size);
+			                /* detect MCE within an epoch */
+			                detectMCEInProc(aChain);
+				}
+				else if (eventCode == BARRIER)
+				{
+					//detect MCE across processes
+					printAllList(aList, size);
+					detectMCEAcrossProc(aList, size);
+					freeAllList(aList, size);
+				}
+				else 
+				{ 
+					//do nothing
+				}
 			}
 			else 
-			{ 
-				//do nothing
+			{
+				index++;
+			}
+			free(buffer);
+		}
+		else if (pscw[index] == 'P')
+		{
+                	int target = removeIntList(aIntList);
+                	if (target >= 0)
+                	{
+                        	index = target;
+                	}
+			else //if (target < 0)
+			{
+                		tmpClock = (int *) malloc(size * sizeof(int));
+                		for (i = 0; i < size; i++)
+                		{
+                        		tmpClock[i] = clock[index][i];
+                		}
+
+                		Node *aNode = initNode(tmpClock);
+                		insertList(aList[index], aNode);
+                		Chai *aChain = initChain(index);
+                		readEventWithinEpoch(pFile, index, clock, size, aList, aChain, WAIT);
+
+                		/* detect MCE within an epoch */
+				detectMCEInProc(aChain);
+
+				for (i = 0; i < size; i++)
+				{
+        				if (i != index)
+        				{
+                				clock[index][i] = clock[i][i];
+        				}
+				}
+				pscw[index] = 'N';
+				post = -1;
+				index = 0;
 			}
 		}
-		else 
+		else if (pscw[index] == 'S')
 		{
-			index++;
+			clock[index][index]++;
+			for (i = 0; i < size; i++)
+			{
+        			if (i != index && clock[index][i] < clock[post][i])
+        			{
+                			clock[index][i] = clock[post][i];
+        			}
+			}
+			tmpClock = (int *) malloc(size * sizeof(int));
+			for (i = 0; i < size; i++)
+			{
+        			tmpClock[i] = clock[index][i];
+			}
+
+			Node *aNode = initNode(tmpClock);
+			insertList(aList[index], aNode);
+			Chai *aChain = initChain(index);
+			readEventWithinEpoch(pFile, index, clock, size, aList, aChain, COMPLETE);
+
+			/* detect MCE within an epoch */
+			detectMCEInProc(aChain);
+			pscw[index] = 'N';
+			index = post;
 		}
-		free(buffer);
+		else if (pscw[index] == 'C')
+		{
+			//do nothing
+		}
+		else if (pscw[index] == 'W')
+		{
+			//do nothing
+		}
+		else
+		{
+			//do nothing
+		}
 	}
 
 	for (i = 0; i < size; i++)
 	{
 		fclose(pFile[i]);
+		free(clock[i]);
 	}
 	free(pFile);
+	free(clock);
+	free(pscw);
 
 	//End Of File
 	//detect MCE across processes
-	//printAllList(aList, size);
+	printAllList(aList, size);
 	detectMCEAcrossProc(aList, size);
 	freeAllList(aList, size);
 

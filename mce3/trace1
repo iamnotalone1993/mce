@@ -1,13 +1,13 @@
-Create	0xbfa84e8c	1	4
+Create	0xbf98ebdc	1	4
 Fence
-Get	0xbfa84e90	1	2	0	1
+Get	0xbf98ebe0	1	2	0	1
 Fence
 Lock
-Put	0xbfa84e90	1	0	0	1
+Put	0xbf98ebe0	1	0	0	1
 Unlock
-Post
-Store	0xbfa84e8c
+Post	0
+Store	0xbf98ebdc
 Wait
 Lock
-Put	0xbfa84e90	1	0	0	1
+Put	0xbf98ebe0	1	0	0	1
 Unlock

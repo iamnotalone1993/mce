@@ -91,14 +91,50 @@ int MPI_Win_fence(int assert, MPI_Win win)
 int MPI_Win_post(MPI_Group group, int assert, MPI_Win win)
 {
 	int result = PMPI_Win_post(group, assert, win);
-	fprintf(fp, "Post\n");
+	int size, i;
+	MPI_Group worldGroup;
+	PMPI_Group_size(group, &size);
+	int *ranks1 = (int *) malloc(size * sizeof(int));
+	int *ranks2 = (int *) malloc(size * sizeof(int));
+	for (i = 0; i < size; i++)
+	{
+		ranks1[i] = i;
+	}
+	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
+	MPI_Group_translate_ranks(group, size, ranks1, worldGroup, ranks2);
+	fprintf(fp, "Post\t");
+	for (i = 0; i < size - 1; i++)
+	{
+		fprintf(fp, "%d\t", ranks2[i]);
+	}
+	fprintf(fp, "%d\n", ranks2[i]);
+	free(ranks1);
+	free(ranks2);
 	return result;
 }
 
 int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
 {
 	int result = PMPI_Win_start(group, assert, win);
-	fprintf(fp, "Start\n");
+	int size, i;
+	MPI_Group worldGroup;
+	PMPI_Group_size(group, &size);
+	int *ranks1 = (int *) malloc(size * sizeof(int));
+	int *ranks2 = (int *) malloc(size * sizeof(int));
+	for (i = 0; i < size; i++)
+	{
+		ranks1[i] = i;
+	}
+	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
+	MPI_Group_translate_ranks(group, size, ranks1, worldGroup, ranks2);
+	fprintf(fp, "Start\t");
+	for (i = 0; i < size - 1; i++)
+	{
+		fprintf(fp, "%d\t", ranks2[i]);
+	}
+	fprintf(fp, "%d\n", ranks2[i]);
+	free(ranks1);
+	free(ranks2);
 	return result;
 }
 
