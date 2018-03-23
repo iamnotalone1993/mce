@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
+#include <time.h>
 
 #define	BUFFER_SIZE		30
 
@@ -24,6 +26,9 @@
 #define	LOAD			14
 #define	STORE			15
 #define CREATE			16
+
+int memUsage = 0;
+int getMemory();
 
 typedef struct Comm {
         int code;

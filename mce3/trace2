@@ -1,7 +1,7 @@
-Create	0xbff6de8c	1	4
+Create	0xbfaf075c	1	4
 Fence
-Put	0xbff6de90	1	0	0	1
+Put	0xbfaf0760	1	0	0	1
 Fence
 Lock
-Put	0xbff6de90	1	1	0	1
+Put	0xbfaf0760	1	1	0	1
 Unlock
