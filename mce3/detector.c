@@ -1011,6 +1011,8 @@ int main(int argc, char **argv)
 		}
 	}
 
+	int tmpMem = getMemory();
+	memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
 	for (i = 0; i < size; i++)
 	{
 		fclose(pFile[i]);
@@ -1023,8 +1025,6 @@ int main(int argc, char **argv)
 	//End Of File
 	//detect MCE across processes
 	//printAllList(aList, size);
-	int tmpMem = getMemory();
-	memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
 	detectMCEAcrossProc(aList, size);
 	freeAllList(aList, size);
 	printf("Memory Usage: %dkB.\n", memUsage);
