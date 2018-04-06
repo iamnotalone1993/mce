@@ -66,10 +66,13 @@ int main(int argc, char **argv)
 			MPI_Recv(&syn, 1, MPI_FLOAT, ibclr(myrank, position), 1, MPI_COMM_WORLD, &status);
 			MPI_Get(&a, n, MPI_FLOAT, ibclr(myrank, position), 0, n, MPI_FLOAT, win);
 			check = 0.0;
+			tracels(false, &check);
 			while (check == 0.0)
 			{
+				tracels(true, &check);
 				MPI_Get(&check, 1, MPI_FLOAT, myrank, n-1, 1, MPI_FLOAT, win);
 			}
+			tracels(true, &check)
 		}
 		else
 		{
@@ -88,10 +91,13 @@ int main(int argc, char **argv)
 			MPI_Recv(&syn, 1, MPI_FLOAT, ibclr(myrank, position), 1, MPI_COMM_WORLD, &status);
 			MPI_Get(&a, n, MPI_FLOAT, ibclr(myrank, position), 0, n, MPI_FLOAT, win);
 			check = 0.0;
+			tracels(false, &check);
 			while (check == 0.0)
 			{
+				tracels(true, &check);
 				MPI_Get(&check, 1, MPI_FLOAT, myrank, n-1, 1, MPI_FLOAT, win);
 			}
+			tracels(true, check);
 			syn = 1.0;
 			while (j >= 0)
 			{
