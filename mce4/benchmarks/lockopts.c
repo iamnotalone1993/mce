@@ -59,15 +59,18 @@ int main(int argc, char *argv[])
     	if (wrank == 0) 
 	{
 		MPI_Barrier( MPI_COMM_WORLD );
-		MPI_Win_lock( MPI_LOCK_EXCLUSIVE, 0, 0, win );
+		MPI_Win_lock( MPI_LOCK_SHARED, 0, 0, win );
 		for (i = 0; i < 10; i++) 
 		{
 	    		if (rmabuf[i] != -i + 4*i) 
 			{
 				errs++;
 				printf( "Acc: expected rmabuf[%d] = %d but saw %d\n", i, -i + 4*i, rmabuf[i] );
+				tracels(true, rmabuf);
 	    		}
+			tracels(true, rmabuf);
 	    		rmabuf[i] = -i;
+			tracels(false, rmabuf);
 		}
 		for (i = 10; i < memsize; i++) 
 		{
@@ -75,8 +78,11 @@ int main(int argc, char *argv[])
 			{
 				errs++;
 				printf( "Acc: expected rmabuf[%d] = %d but saw %d\n", i, -i, rmabuf[i] );
+				tracels(true, rmabuf);
 				rmabuf[i] = -i;
+				tracels(false, rmabuf);
 	    		}
+			tracels(true, rmabuf);
 		}
 		MPI_Win_unlock( 0, win );
     	}
@@ -98,15 +104,18 @@ int main(int argc, char *argv[])
     	if (wrank == 0) 
 	{
 		MPI_Barrier( MPI_COMM_WORLD );
-		MPI_Win_lock( MPI_LOCK_EXCLUSIVE, 0, 0, win );
+		MPI_Win_lock( MPI_LOCK_SHARED, 0, 0, win );
 		for (i = 0; i < 10; i++) 
 		{
 	    		if (rmabuf[i] != 4*i) 
 			{
 				errs++;
 				printf( "Put: expected rmabuf[%d] = %d but saw %d\n", i, 4*i, rmabuf[i] );
+				tracels(true, rmabuf);
 	    		}
+			tracels(true, rmabuf);
 		    	rmabuf[i] = -i;
+			tracels(false, rmabuf);
 		}
 		for (i = 10; i < memsize; i++) 
 		{
@@ -114,8 +123,11 @@ int main(int argc, char *argv[])
 			{
 				errs++;
 				printf( "Put: expected rmabuf[%d] = %d but saw %d\n", i, -i, rmabuf[i] );
+				tracels(true, rmabuf);
 				rmabuf[i] = -i;
+				tracels(false, rmabuf);
 	    		}
+			tracels(true, rmabuf);
 		}
 		MPI_Win_unlock( 0, win );
     	}
@@ -138,15 +150,18 @@ int main(int argc, char *argv[])
     	if (wrank == 0) 
 	{
 		MPI_Barrier( MPI_COMM_WORLD );
-		MPI_Win_lock( MPI_LOCK_EXCLUSIVE, 0, 0, win );
+		MPI_Win_lock( MPI_LOCK_SHARED, 0, 0, win );
 		for (i = 0; i < 10; i++) 
 		{
 	    		if (rmabuf[i] != 4*i) 
 			{
 				errs++;
 				printf( "Put: expected rmabuf[%d] = %d but saw %d\n", i, 4*i, rmabuf[i] );
+				tracels(true, rmabuf);
 	    		}
+			tracels(true, rmabuf);
 	    		rmabuf[i] = -i;
+			tracels(false, rmabuf);
 		}
 		for (i = 10; i < memsize; i++) 
 		{
@@ -154,7 +169,9 @@ int main(int argc, char *argv[])
 			{
 				errs++;
 				printf( "Put: expected rmabuf[%d] = %d but saw %d\n", i, -i, rmabuf[i] );
+				tracels(true, rmabuf);
 				rmabuf[i] = -i;
+				tracels(false, rmabuf);
 	    		}
 		}
 		MPI_Win_unlock( 0, win );
@@ -171,7 +188,9 @@ int main(int argc, char *argv[])
 		{
 	    		errs++;
 	    		printf( "Get: Expected -10, got %d\n", val );
+			tracels(true, &val);
 		}
+		tracels(true, &val);
     	}
     	else 	
 	{
@@ -185,15 +204,18 @@ int main(int argc, char *argv[])
     	if (wrank == 0) 
 	{
 		MPI_Barrier( MPI_COMM_WORLD );
-		MPI_Win_lock( MPI_LOCK_EXCLUSIVE, 0, 0, win );
+		MPI_Win_lock( MPI_LOCK_SHARED, 0, 0, win );
 		for (i = 0; i < 10; i++) 
 		{
 	    		if (rmabuf[i] != 4*i) 
 			{
 				errs++;
 				printf( "Put: expected rmabuf[%d] = %d but saw %d\n", i, 4*i, rmabuf[i] );
+				tracels(true, rmabuf);
 	    		}
+			tracels(true, rmabuf);
 	    		rmabuf[i] = -i;
+			tracels(false, rmabuf);
 		}
 		for (i = 10; i < memsize; i++) 
 		{
@@ -201,8 +223,11 @@ int main(int argc, char *argv[])
 			{
 				errs++;
 				printf( "Put: expected rmabuf[%d] = %d but saw %d\n", i, -i, rmabuf[i] );
+				tracels(true, rmabuf);
 				rmabuf[i] = -i;
+				tracels(false, rmabuf);
 	    		}
+			tracels(true, rmabuf);
 		}
 		MPI_Win_unlock( 0, win );
     	}
@@ -218,7 +243,9 @@ int main(int argc, char *argv[])
 		{
 	    		errs++;
 	    		printf( "Get: Expected -10, got %d\n", val );
+			tracels(true, &val);
 		}
+		tracels(true, &val);
     	}
     	else 
 	{
