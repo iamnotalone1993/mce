@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 				tracels(true, &check);
 				MPI_Get(&check, 1, MPI_FLOAT, myrank, n-1, 1, MPI_FLOAT, win);
 			}
-			tracels(true, &check)
+			tracels(true, &check);
 		}
 		else
 		{
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 				tracels(true, &check);
 				MPI_Get(&check, 1, MPI_FLOAT, myrank, n-1, 1, MPI_FLOAT, win);
 			}
-			tracels(true, check);
+			tracels(true, &check);
 			syn = 1.0;
 			while (j >= 0)
 			{
