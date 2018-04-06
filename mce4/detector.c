@@ -1,0 +1,1036 @@
+#include "detector.h"
+
+int getMemory()
+{
+        char *tmp, *tmp1, *fileName;
+        int result, pid; 
+        fileName = (char *) malloc(25 * sizeof(char));
+        pid = getpid();
+        sprintf(fileName, "/proc/%d/status", pid);
+        FILE *pFile = fopen(fileName, "r");
+        free(fileName);
+        char *buffer = (char *) malloc(50 * sizeof(char));
+        while (fgets(buffer, 50, pFile) != NULL)
+        {
+                if (strstr(buffer, "VmRSS:") != NULL)
+                {
+                        tmp = strpbrk(buffer, "0123456789");
+                        result = strcspn(tmp, " \t");
+                        tmp1 = (char *) malloc((result + 1) * sizeof(char));
+                        memcpy(tmp1, tmp, result);
+                        tmp1[result] = '\0';
+                        result = atoi(tmp1);
+                        free(tmp1);
+                        break;
+                }
+                else
+                {
+                        free(buffer);
+                        buffer = (char *) malloc(50 * sizeof(char));
+                }
+        }
+        free(buffer);
+        fclose(pFile);
+        return result;
+}
+
+int getEventCode(char *str)
+{
+	int i = 0;
+	switch (str[i])
+	{
+                case 'L':
+                        i = i + 2;
+                        if (str[i] == 'a')
+                                return LOAD;
+                        else //if (str[i] == 'c')
+                                return LOCK;
+                case 'S':
+                        i++;
+                        if (str[i] == 'e')
+                                return SEND;
+                        else //if (str[i] == 't')
+                        {
+                                i++;
+                                if (str[i] == 'o')
+                                        return STORE;
+                                else //if (str[i] == 'a')
+                                        return START;
+                        }
+		case 'G':
+                        return GET;
+                case 'P':
+                        i++;
+                        if (str[i] == 'u')
+                                return PUT;
+                        else //if (str[i] == 'o')
+                                return POST;
+		case 'A':
+			return ACCUMULATE;
+		case 'B':
+			return BARRIER;
+		case 'C':
+			i++;
+			if (str[i] == 'o')
+				return COMPLETE;
+			else //if (str[i] == 'r');
+				return CREATE;
+		case 'F':
+			return FENCE;
+		case 'R':
+			return RECV;
+		case 'U':
+			return UNLOCK;
+		case 'W':
+			return WAIT;
+	}
+}
+
+char *convertCode2Name(int code)
+{
+	char *tmp;
+	switch (code)
+	{
+		case FENCE:
+			tmp = malloc(6 * sizeof(char));
+			strcpy(tmp, "FENCE\0");
+			return tmp;
+		case BARRIER:
+                        tmp = malloc(8 * sizeof(char));
+                        strcpy(tmp, "BARRIER\0");
+                        return tmp;
+		case GET:
+                        tmp = malloc(4 * sizeof(char));
+                        strcpy(tmp, "GET\0");
+                        return tmp;
+		case PUT:
+                        tmp = malloc(4 * sizeof(char));
+                        strcpy(tmp, "PUT\0");
+                        return tmp;
+		case ACCUMULATE:
+                        tmp = malloc(11 * sizeof(char));
+                        strcpy(tmp, "ACCUMULATE\0");
+                        return tmp;
+        	case POST:
+                        tmp = malloc(5 * sizeof(char));
+                        strcpy(tmp, "POST\0");
+                        return tmp;
+        	case START:
+                        tmp = malloc(6 * sizeof(char));
+                        strcpy(tmp, "START\0");
+                        return tmp;
+		case COMPLETE:
+                        tmp = malloc(9 * sizeof(char));
+                        strcpy(tmp, "COMPLETE\0");
+                        return tmp;
+		case WAIT:
+                        tmp = malloc(5 * sizeof(char));
+                        strcpy(tmp, "WAIT\0");
+                        return tmp;
+        	case LOCK:
+                        tmp = malloc(5 * sizeof(char));
+                        strcpy(tmp, "LOCK\0");
+                        return tmp;
+        	case UNLOCK:
+                        tmp = malloc(7 * sizeof(char));
+                        strcpy(tmp, "UNLOCK\0");
+                        return tmp;
+		case SEND:
+                        tmp = malloc(5 * sizeof(char));
+                        strcpy(tmp, "SEND\0");
+                        return tmp;
+		case RECV:
+                        tmp = malloc(5 * sizeof(char));
+                        strcpy(tmp, "RECV\0");
+                        return tmp;
+        	case LOAD:
+                        tmp = malloc(5 * sizeof(char));
+                        strcpy(tmp, "LOAD\0");
+                        return tmp;
+        	case STORE:
+                        tmp = malloc(6 * sizeof(char));
+                        strcpy(tmp, "STORE\0");
+                        return tmp;
+        	case CREATE:
+                        tmp = malloc(7 * sizeof(char));
+                        strcpy(tmp, "CREATE\0");
+                        return tmp;
+        }
+}
+
+void printClock(int *vclock, int size)
+{
+	int i;
+	printf("clock=[");
+	for (i = 0; i < size - 1; i++)
+	{
+		printf("%d|", vclock[i]);
+	}
+	printf("%d]\n", vclock[i]);
+}
+
+char *getData(char **buffer)
+{
+	char *tmpBuffer, *tmpStr = NULL;
+	int tmpInt;
+
+	tmpBuffer = *buffer;
+	*buffer = strchr(*buffer, '\t');
+	if (*buffer != NULL)
+	{
+		(*buffer)++;
+	}
+	tmpInt = strcspn(tmpBuffer, "\t\n");
+	tmpStr = (char *) malloc((tmpInt + 1) * sizeof(char));
+        memcpy(tmpStr, tmpBuffer, tmpInt);
+        tmpStr[tmpInt] = '\0';
+
+	return tmpStr;
+}
+
+int isConcurrent(int *vclock1, int rank1, int *vclock2, int rank2)
+{
+	if (vclock1[rank2] >= vclock2[rank2])
+		return 1;
+	if (vclock2[rank1] >= vclock1[rank1])
+		return -1;
+	return 0;
+}
+
+Comm *initComm(int code, int target_rank, char *target_addr)
+{
+	Comm *aComm = (Comm *) malloc(sizeof(Comm));
+	aComm->code = code;
+	aComm->target_rank = target_rank;
+	aComm->target_addr = target_addr;
+	aComm->next = NULL;
+	return aComm;
+}
+
+void freeComm(Comm *aComm)
+{
+	free(aComm->target_addr);
+	free(aComm);
+}
+
+void insertCommNode(Node *aNode, Comm* aComm)
+{
+	if (aNode->commHead == NULL && aNode->commTail == NULL)
+	{
+		aNode->commTail = aComm;
+		aNode->commHead = aNode->commTail;
+	}
+	else
+	{
+		aNode->commTail->next = aComm;
+		aNode->commTail = aNode->commTail->next;
+	}
+}
+
+void printComm(Comm *aComm)
+{
+	char *code = convertCode2Name(aComm->code);
+	printf("code=%s target_rank=%d target_addr=%s\n", code, aComm->target_rank, aComm->target_addr);
+	free(code);
+}
+
+Loca *initLoca(int code, char *varAddr)
+{
+	Loca *aLoca = (Loca *) malloc(sizeof(Loca));
+	aLoca->code = code;
+	aLoca->varAddr = varAddr;
+	aLoca->next = NULL;
+	return aLoca;
+}
+
+void freeLoca(Loca *aLoca)
+{
+	free(aLoca->varAddr);
+	free(aLoca);
+}
+
+void insertLocaNode(Node *aNode, Loca *aLoca)
+{
+	if (aNode->locaHead == NULL && aNode->locaTail == NULL)
+        {
+                aNode->locaTail = aLoca;
+                aNode->locaHead = aNode->locaTail;
+        }
+        else
+        {
+                aNode->locaTail->next = aLoca;
+                aNode->locaTail = aNode->locaTail->next;
+        }
+}
+
+void printLoca(Loca *aLoca)
+{
+	char *code = convertCode2Name(aLoca->code);
+	printf("code=%s varAddr=%s\n", code, aLoca->varAddr);
+	free(code);
+}
+
+Node *initNode(int *vclock)
+{
+	Node *aNode = (Node *) malloc(sizeof(Node));
+	aNode->clock = vclock;
+	aNode->commHead = NULL;
+	aNode->commTail = NULL;
+	aNode->locaHead = NULL;
+	aNode->locaTail = NULL;
+	aNode->next = NULL;
+	return aNode;
+}
+
+void freeNode(Node *aNode)
+{
+        free(aNode->clock);
+
+        while (aNode->commHead != NULL)
+        {
+                aNode->commTail = aNode->commHead;
+                aNode->commHead = aNode->commHead->next;
+                freeComm(aNode->commTail);
+        }
+        aNode->commTail = NULL;
+
+        while (aNode->locaHead != NULL)
+        {
+                aNode->locaTail = aNode->locaHead;
+                aNode->locaHead = aNode->locaHead->next;
+                freeLoca(aNode->locaTail);
+        }
+        free(aNode);
+}
+
+void printNode(Node *aNode, int size)
+{
+	printf("Printing a Node...\n");
+	int i;
+	printClock(aNode->clock, size);
+	
+	Comm *commTmp = aNode->commHead;
+	while (commTmp != NULL)
+	{
+		printComm(commTmp);
+		commTmp = commTmp->next;
+	}
+
+	Loca *locaTmp = aNode->locaHead;
+	while (locaTmp != NULL)
+	{
+		printLoca(locaTmp);
+		locaTmp = locaTmp->next;
+	}
+}
+
+List* initList(char *base, int size, int disp_unit)
+{
+	List *aList = (List *) malloc(size * sizeof(List));
+	aList->base = base;
+	aList->size = size;
+	aList->disp_unit = disp_unit;
+	aList->head = NULL;
+	aList->tail = NULL;
+	return aList;
+}
+
+void insertList(List *aList, Node *aNode)
+{
+        if (aList->head == NULL && aList->tail == NULL)
+        {
+                aList->tail = aNode;
+                aList->head = aList->tail;
+        }
+        else
+        {
+                aList->tail->next = aNode; 
+                aList->tail = aList->tail->next;
+        }
+}
+
+void freeList(List *aList)
+{
+	while (aList->head != NULL)
+	{
+		aList->tail = aList->head;
+		aList->head = aList->head->next;
+		free(aList->tail);
+	}
+	aList->tail = NULL;
+}
+
+void freeAllList(List **aList, int size)
+{
+	int i;
+	for (i = 0; i < size; i++)
+	{
+		freeList(aList[i]);
+	}
+}
+
+void printList(List *aList, int size)
+{
+	printf("\nPrinting a List...\n");
+	printf("base=%s size=%d disp_unit=%d\n", aList->base, aList->size, aList->disp_unit);
+
+	Node *tmp = aList->head;
+	while (tmp != NULL)
+	{
+		printNode(tmp, size);
+		tmp = tmp->next;
+	}
+}
+
+void printAllList(List **aList, int size)
+{
+	int i;
+	printf("\nPrinting all Lists...\n");
+	for (i = 0; i < size; i++)
+	{
+		printList(aList[i], size);
+	}
+}
+
+Chai *initChain(int rank)
+{
+	Chai *aChain = (Chai *) malloc(sizeof(Chai));
+	aChain->rank = rank;
+	aChain->head = NULL;
+	aChain->tail = NULL;
+	return aChain;
+}
+
+void insertChain(Chai *aChain, Loca *aLoca)
+{
+	if (aChain->head == NULL && aChain->tail == NULL)
+	{
+		aChain->tail = aLoca;
+		aChain->head = aChain->tail;
+	}
+	else
+	{
+		aChain->tail->next = aLoca;
+		aChain->tail = aChain->tail->next;
+	}
+}
+
+void printChain(Chai *aChain)
+{
+	char *code;
+	printf("\nPrinting a Chain...\n");
+	printf("rank=%d\n", aChain->rank);
+	Loca *tmp = aChain->head;
+	while (tmp != NULL)
+	{
+		code = convertCode2Name(tmp->code);
+		printf("code=%s varAddr=%s\n", code, tmp->varAddr);
+		free(code);
+		tmp = tmp->next;
+	}
+}
+
+Int *initInt(int num)
+{
+	Int *aInt = (Int *) malloc(sizeof(Int));
+	aInt->num = num;
+	aInt->next = NULL;
+	return aInt;
+}
+
+void freeInt(Int *aInt)
+{
+	free(aInt);
+}
+
+IntList *initIntList()
+{
+	IntList *aIntList = (IntList *) malloc(sizeof(IntList));
+	aIntList->head = NULL;
+	aIntList->tail = NULL;
+}
+
+void insertIntList(IntList *aIntList, Int *aInt)
+{
+        if (aIntList->head == NULL && aIntList->tail == NULL)
+        {
+                aIntList->tail = aInt;
+                aIntList->head = aIntList->tail;
+        }
+        else
+        {
+                aIntList->tail->next = aInt;
+                aIntList->tail = aIntList->tail->next;
+        }
+}
+
+int removeIntList(IntList *aIntList)
+{
+	if (aIntList->head == NULL)
+	{
+		return -1;
+	}
+	else //if (aIntList->head != NULL)
+	{
+		int tmp = aIntList->head->num;
+		Int *tmpInt = aIntList->head;
+		aIntList->head = aIntList->head->next;
+		if (aIntList->head == aIntList->tail)
+		{
+			aIntList->tail = NULL;
+		}
+		freeInt(tmpInt);
+		return tmp;
+	}
+}
+
+void readEventWithinEpoch(FILE **pFile, int index, int **vclock, int size, List **aList, Chai *aChain, int endEvent)
+{
+	while (true)
+        {
+        	char *buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
+        	if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL)
+                {
+			//printf("C3: %s", buffer);
+			//getchar();
+                	int eventCode = getEventCode(buffer);
+                       	if (eventCode != endEvent)
+                        {
+				if (eventCode >= GET && eventCode <= ACCUMULATE)
+				{	
+					char *tmpBuffer = buffer;
+					char *tmpStr = getData(&tmpBuffer);
+					free(tmpStr);
+					char *origin_addr = getData(&tmpBuffer);
+					tmpStr = getData(&tmpBuffer);
+					free(tmpStr);
+					tmpStr = getData(&tmpBuffer);
+					int target_rank = atoi(tmpStr);
+					free(tmpStr);
+					char *target_addr = (char *) malloc((strlen(aList[target_rank]->base) + 1) * sizeof(char));
+					strcpy(target_addr, aList[target_rank]->base);
+					Comm *aComm = initComm(eventCode, target_rank, target_addr);
+					insertCommNode(aList[index]->tail, aComm);
+					Loca *aLoca = initLoca(eventCode, origin_addr);
+					insertChain(aChain, aLoca);
+				}
+				else if (eventCode >= LOAD && eventCode <= STORE)
+				{
+					char *tmpBuffer = buffer;
+					char *tmpStr = getData(&tmpBuffer);
+					free(tmpStr);
+					char *varAddr = getData(&tmpBuffer);
+					char *varAddr2 = (char *) malloc((strlen(varAddr) + 1) * sizeof(char));
+					strcpy(varAddr2, varAddr);
+					Loca *aLoca = initLoca(eventCode, varAddr);
+					insertLocaNode(aList[index]->tail, aLoca);
+					Loca *aLoca2 = initLoca(eventCode, varAddr2);
+					insertChain(aChain, aLoca2);
+				}
+				else 
+				{ 
+					//do nothing
+				}
+                    	}
+                        else //if (eventCode == endEvent)
+                        {
+				vclock[index][index]++;
+                        	break;
+                        }
+          	}
+		else //if (fgets(buffer, BUFFER_SIZE, pFile[i]) != NULL)
+                {
+                	//do nothing
+                }
+		free(buffer);
+	}
+}
+
+void detectMCEInProc(Chai *aChain)
+{
+	if (aChain->head == NULL && aChain->tail == NULL) 
+	{ 
+		//do nothing
+	}
+	else 
+	{
+		Loca *tmp;
+		while (aChain->head != NULL)
+		{
+			aChain->tail = aChain->head;
+			if (aChain->head->code != LOAD && aChain->head->code != STORE)
+                        {
+				tmp = aChain->head->next;
+                        	while (tmp != NULL)
+                        	{
+                                	if (aChain->head->code == GET)
+                                	{
+						if (strcmp(aChain->head->varAddr, tmp->varAddr) == 0)
+						{
+							char *code1 = convertCode2Name(aChain->head->code);
+							char *code2 = convertCode2Name(tmp->code);
+                                                	printf("MCE within an epoch on %s between %s and %s in P%d\n",
+											tmp->varAddr, code1, code2, aChain->rank);
+							free(code1);
+							free(code2);
+						}
+						else //if (strcmp(aChain.tail->varAddr, tmp->varAddr) != 0)
+						{
+							//do nothing
+						}
+                                	}
+                                	else if (aChain->head->code == PUT || aChain->head->code == ACCUMULATE)
+                                	{
+						if (tmp->code == GET || tmp->code == STORE)
+						{
+							if (strcmp(aChain->head->varAddr, tmp->varAddr) == 0)
+                                                	{
+								char *code1 = convertCode2Name(aChain->head->code);
+								char *code2 = convertCode2Name(tmp->code);
+                                                        	printf("MCE within an epoch on %s between %s and %s in P%d\n", 
+												tmp->varAddr, code1, code2, aChain->rank);
+								free(code1);
+								free(code2);
+                                                	}
+                                                	else //if (strcmp(aChain.tail->varAddr, tmp->varAddr) != 0)
+                                                	{
+                                                        	//do nothing
+                                                	}
+						}
+						else //if (tmp->varAddr->code != GET && tmp->varAddr->code != STORE)
+						{
+							//do nothing
+						}
+                                	}
+                                	else //if (aChain.tail->code == LOAD || aChain.tail->code == STORE) 
+                                	{
+                                        	//do nothing
+                                	}
+                                	tmp = tmp->next;
+                        	}
+                        }
+                        else //if (aChain.tail->code == LOAD || aChain.tail->code == STORE) 
+                        {
+                                        //do nothing
+                        }
+			aChain->head = aChain->head->next;
+			free(aChain->tail->varAddr);
+			aChain->tail->next = NULL;
+                	free(aChain->tail);
+		}
+	}
+}
+
+void detectMCEAcrossProc(List **aList, int size)
+{
+	int i, j;
+	Node *nodeTmp1, *nodeTmp2;
+	Comm *commTmp1, *commTmp2;
+	Loca *locaTmp1, *locaTmp2;
+
+	for (i = 0; i < size; i++)
+	{
+		nodeTmp1 = aList[i]->head;
+		while (nodeTmp1 != NULL)
+		{
+			for (j = i + 1; j < size; j++)
+			{
+				nodeTmp2 = aList[j]->head;
+				while (nodeTmp2 != NULL)
+				{
+					if (isConcurrent(nodeTmp1->clock, i, nodeTmp2->clock, j) == -1)
+					{
+						break;
+					}
+					else if (isConcurrent(nodeTmp1->clock, i, nodeTmp2->clock, j) == 1)
+					{
+						//do nothing
+					}
+					else //if (isConcurrent(nodeTmp1->clock, i, nodeTmp2->clock, j) == 0)
+					{
+						commTmp1 = nodeTmp1->commHead;
+						while (commTmp1 != NULL)
+						{
+							commTmp2 = nodeTmp2->commHead;
+							while (commTmp2 != NULL)
+							{
+								if (commTmp1->target_rank == commTmp2->target_rank &&
+									strcmp(commTmp1->target_addr, commTmp2->target_addr) == 0)
+								{
+									char *code1 = convertCode2Name(commTmp1->code);
+									char *code2 = convertCode2Name(commTmp2->code);
+                                        				printf("MCE across processes on %s in P%d between %s in P%d and %s in P%d\n",
+                                                        			commTmp1->target_addr, commTmp1->target_rank, 
+										code1, i, code2, j);
+									free(code1);
+									free(code2);
+								}
+								else
+								{
+									//do nothing
+								}
+								commTmp2 = commTmp2->next;
+							}
+							
+							locaTmp2 = nodeTmp2->locaHead;
+							while (locaTmp2 != NULL)
+							{
+								if (commTmp1->target_rank == j &&
+									strcmp(commTmp1->target_addr, locaTmp2->varAddr) == 0)
+								{
+									char *code1 = convertCode2Name(commTmp1->code);
+									char *code2 = convertCode2Name(locaTmp2->code);
+									printf("MCE across processes on %s in P%d between %s in P%d and %s in P%d\n",
+                                                        				commTmp1->target_addr, j, code1, i, code2, j);
+									free(code1);
+									free(code2);
+								}
+								else
+								{
+									//do nothing
+								}
+								locaTmp2 = locaTmp2->next;
+							}
+							commTmp1 = commTmp1->next;
+						}
+
+						locaTmp1 = nodeTmp1->locaHead;
+						while (locaTmp1 != NULL)
+						{
+							commTmp2 = nodeTmp2->commHead;
+							while (commTmp2 != NULL)
+							{
+								if (commTmp2->target_rank == i &&
+                                                                        strcmp(commTmp2->target_addr, locaTmp1->varAddr) == 0)
+								{
+									char *code1 = convertCode2Name(locaTmp1->code);
+									char *code2 = convertCode2Name(commTmp2->code);
+                                                                        printf("MCE across processes on %s in P%d between %s in P%d and %s in P%d\n",
+                                                                                	commTmp2->target_addr, i, code1, i, code2, j);
+									free(code1);
+									free(code2);
+								}
+								else
+								{
+									//do nothing
+								}
+								commTmp2 = commTmp2->next;
+							}
+							locaTmp1 = locaTmp1->next;
+						}
+					}
+					nodeTmp2 = nodeTmp2->next;
+				}
+			}
+			nodeTmp1 = nodeTmp1->next;
+		}
+	}
+}
+
+int main(int argc, char **argv)
+{
+	clock_t begin = clock();
+	int size, i, index, **vclock, *tmpClock, tmpInt, eventCode, j, post;
+	char fileName[15];
+	char *buffer, *tmpBuffer, *tmpStr, *pscw;
+	IntList *aIntList;
+
+	post = -1;
+	size = atoi(argv[1]);
+	pscw = (char *) malloc(size * sizeof(char));
+	FILE **pFile = (FILE **) malloc(size * sizeof(FILE *));
+	List **aList = (List **) malloc(size * sizeof(List *));
+	vclock = (int **) malloc(size * sizeof(int *));
+	for (i = 0; i < size; i++)
+	{	
+		pscw[i] = 'N';
+		sprintf(fileName, "./traces/trace%d", i);
+		pFile[i] = fopen(fileName, "r");
+		if (pFile[i] == NULL)
+		{
+			perror("Error opening file");
+		}
+		vclock[i] = (int *) malloc(size * sizeof(int));
+		for (j = 0; j < size; j++)
+		{
+			vclock[i][j] = 0;
+		}
+
+		buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
+		fgets(buffer, BUFFER_SIZE, pFile[i]);
+
+		tmpBuffer = buffer;
+                tmpStr = getData(&tmpBuffer);
+		free(tmpStr);
+
+		tmpStr = getData(&tmpBuffer);
+		char *base = tmpStr;
+
+		tmpStr = getData(&tmpBuffer);
+		int size = atoi(tmpStr);
+		free(tmpStr);
+		
+		tmpStr = getData(&tmpBuffer);
+		int disp_unit = atoi(tmpStr);
+		free(tmpStr);
+
+		aList[i] = initList(base, size, disp_unit);
+		free(buffer);
+	}
+
+	index = 0;
+	while (index < size)
+	{
+		if (pscw[index] == 'N')
+		{
+			buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
+			if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL)
+			{              
+				//printf("C1: %s", buffer);
+				//getchar();
+				int eventCode = getEventCode(buffer);
+				if (eventCode == FENCE)
+				{
+					vclock[index][index]++;
+					free(buffer);
+			
+					for (i = index + 1; i < size; i++)
+					{
+						while (true)
+						{
+							buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
+							if (fgets(buffer, BUFFER_SIZE, pFile[i]) != NULL)
+							{
+								//printf("C2: %s",buffer);
+								//getchar();
+								if (getEventCode(buffer) == FENCE)
+								{
+									vclock[i][i]++;
+									free(buffer);
+									break;
+								}
+								else //if (getEventCode(buffer) != FENCE)
+								{
+									//do nothing
+								}
+							}
+							else //if (fgets(buffer, BUFFER_SIZE, pFile[i]) == NULL)
+							{
+								//do nothing
+							}
+							free(buffer);
+						}
+					}
+
+					for (i = index; i < size; i++)
+					{
+						for (j = index; j < size; j++)
+						{
+							if (i != j)
+							{
+								vclock[i][j] = vclock[j][j];
+							}
+						}
+						tmpClock = (int *) malloc(size * sizeof(int));
+			                        for (j = 0; j < size; j++)
+			                        {
+			                        	tmpClock[j] = vclock[index][j];
+			                        }
+						Node *aNode = initNode(tmpClock);
+						insertList(aList[i], aNode);
+					}
+
+					for (i = index; i < size; i++)
+			        	{
+						Chai *aChain = initChain(i);	
+						readEventWithinEpoch(pFile, i, vclock, size, aList, aChain, FENCE);
+				
+						/* detect MCE within an epoch */
+						//printChain(aChain);
+						detectMCEInProc(aChain);
+			        	}
+
+					for (i = index; i < size; i++)
+					{
+					        for (j = index; j < size; j++)
+			                        {
+			                                if (i != j)
+			                                {
+			                                        vclock[i][j] = vclock[j][j];
+			                                }
+			                        }
+
+					}
+			
+					/* dectect MCE across processes */
+					//printAllList(aList, size);
+					int tmpMem = getMemory();
+					memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
+					detectMCEAcrossProc(aList, size);
+					freeAllList(aList, size);
+				}
+				else if (eventCode == POST)
+				{
+					pscw[index] = 'P';
+					post = index;
+					vclock[index][index]++;
+
+		                        tmpBuffer = buffer;
+		                        tmpStr = getData(&tmpBuffer);
+		                        free(tmpStr);
+		                        aIntList = initIntList();
+		                        while (tmpBuffer != NULL)
+		                        {
+		                                tmpStr = getData(&tmpBuffer);
+		                                Int *aInt = initInt(atoi(tmpStr));
+		                                insertIntList(aIntList, aInt);
+		                                free(tmpStr);
+					}
+				}
+				else if (eventCode == START)
+				{
+					pscw[index] = 'S';
+					if (post < 0)
+					{
+						tmpBuffer = buffer;
+						tmpStr = getData(&tmpBuffer);
+						free(tmpStr);
+						tmpStr = getData(&tmpBuffer);
+						index = atoi(tmpStr);
+						free(tmpStr);
+					}
+				}
+				else if (eventCode == LOCK)
+				{
+					vclock[index][index]++;
+			                tmpClock = (int *) malloc(size * sizeof(int));
+			                for (j = 0; j < size; j++)
+			                {
+			                        tmpClock[j] = vclock[index][j];
+			                }
+					Node *aNode = initNode(tmpClock);
+					insertList(aList[index], aNode);
+					Chai *aChain = initChain(index);
+			                readEventWithinEpoch(pFile, index, vclock, size, aList, aChain, UNLOCK);
+
+			                /* detect MCE within an epoch */
+			                detectMCEInProc(aChain);
+				}
+				else if (eventCode == BARRIER)
+				{
+					//detect MCE across processes
+					//printAllList(aList, size);
+					int tmpMem = getMemory();
+					memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
+					detectMCEAcrossProc(aList, size);
+					freeAllList(aList, size);
+				}
+				else 
+				{ 
+					//do nothing
+				}
+			}
+			else 
+			{
+				index++;
+			}
+			free(buffer);
+		}
+		else if (pscw[index] == 'P')
+		{
+                	int target = removeIntList(aIntList);
+                	if (target >= 0)
+                	{
+                        	index = target;
+                	}
+			else //if (target < 0)
+			{
+                		tmpClock = (int *) malloc(size * sizeof(int));
+                		for (i = 0; i < size; i++)
+                		{
+                        		tmpClock[i] = vclock[index][i];
+                		}
+
+                		Node *aNode = initNode(tmpClock);
+                		insertList(aList[index], aNode);
+                		Chai *aChain = initChain(index);
+                		readEventWithinEpoch(pFile, index, vclock, size, aList, aChain, WAIT);
+
+                		/* detect MCE within an epoch */
+				detectMCEInProc(aChain);
+
+				for (i = 0; i < size; i++)
+				{
+        				if (i != index)
+        				{
+                				vclock[index][i] = vclock[i][i];
+        				}
+				}
+				pscw[index] = 'N';
+				post = -1;
+				index = 0;
+			}
+		}
+		else if (pscw[index] == 'S')
+		{
+			vclock[index][index]++;
+			for (i = 0; i < size; i++)
+			{
+        			if (i != index && vclock[index][i] < vclock[post][i])
+        			{
+                			vclock[index][i] = vclock[post][i];
+        			}
+			}
+			tmpClock = (int *) malloc(size * sizeof(int));
+			for (i = 0; i < size; i++)
+			{
+        			tmpClock[i] = vclock[index][i];
+			}
+
+			Node *aNode = initNode(tmpClock);
+			insertList(aList[index], aNode);
+			Chai *aChain = initChain(index);
+			readEventWithinEpoch(pFile, index, vclock, size, aList, aChain, COMPLETE);
+
+			/* detect MCE within an epoch */
+			detectMCEInProc(aChain);
+			pscw[index] = 'N';
+			index = post;
+		}
+		else if (pscw[index] == 'C')
+		{
+			//do nothing
+		}
+		else if (pscw[index] == 'W')
+		{
+			//do nothing
+		}
+		else
+		{
+			//do nothing
+		}
+	}
+
+	int tmpMem = getMemory();
+	memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
+	for (i = 0; i < size; i++)
+	{
+		fclose(pFile[i]);
+		free(vclock[i]);
+	}
+	free(pFile);
+	free(vclock);
+	free(pscw);
+
+	//End Of File
+	//detect MCE across processes
+	//printAllList(aList, size);
+	detectMCEAcrossProc(aList, size);
+	freeAllList(aList, size);
+	printf("Memory Usage: %dkB.\n", memUsage);
+	clock_t end = clock();
+	double elapsedTime = (double) (end - begin) / CLOCKS_PER_SEC;
+	printf("Execution Time: %fs.\n", elapsedTime);
+
+	return 0;
+}
