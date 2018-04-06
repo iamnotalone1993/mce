@@ -1,1 +1,16 @@
-
+Create	0xbfe6cc2c	1	4
+Fence
+Get	0xbfe6cc30	1	1	0	1
+Fence
+Lock
+Store	0xbfe6cc30
+Put	0xbfe6cc30	1	1	0	1
+Unlock
+Start	1
+Get	0xbfe6cc30	1	1	0	1
+Store	0xbfe6cc2c
+Complete
+Lock
+Store	0xbfe6cc30
+Put	0xbfe6cc30	1	1	0	1
+Unlock

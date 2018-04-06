@@ -1,0 +1,16 @@
+Create	0xbfcafb5c	1	4
+Fence
+Get	0xbfcafb60	1	2	0	1
+Load	0xbfcafb60
+Fence
+Lock
+Store	0xbfcafb60
+Put	0xbfcafb60	1	0	0	1
+Unlock
+Post	0
+Store	0xbfcafb5c
+Wait
+Lock
+Store	0xbfcafb60
+Put	0xbfcafb60	1	0	0	1
+Unlock
