@@ -10,6 +10,7 @@
 
 #define	BUFFER_SIZE		30
 
+#define DEFAULT			0
 #define	FENCE			1
 #define	BARRIER			2
 #define	GET			3
