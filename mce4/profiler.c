@@ -1,6 +1,6 @@
 #include "profiler.h"
 
-void tracels(bool isLoad, void *varaddr) //TODO
+void tracels(bool isLoad, void *varaddr)
 {	
 	if (isLoad == true)
 	{
@@ -47,37 +47,37 @@ int MPI_Finalize()
 	return result;
 }
 
-int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, MPI_Win *win) //TODO
+int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, MPI_Win *win)
 {
 	int result = PMPI_Win_create(base, size, disp_unit, info, comm, win);
-	fprintf(fp, "Create\t%p\t%d\t%d\n", base, (int) size, disp_unit);
+	fprintf(fp, "Create\t%p\n", base);
 	return result;
 }
 
 int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank,
-				MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win) //TODO
+				MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win)
 {	
 	int result = PMPI_Put(origin_addr, origin_count, origin_datatype, target_rank, target_disp, target_count, 
                                 target_datatype, win);
-	fprintf(fp, "Put\t%p\t%d\t%d\t%d\t%d\n", origin_addr, origin_count, target_rank, (int) target_disp, target_count);
+	fprintf(fp, "Put\t%p\t%d\n", origin_addr, target_rank);
 	return result;
 }
 
 int MPI_Get(void *origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank, 
-			MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win) //TODO
+			MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Win win)
 {
 	int result = PMPI_Get(origin_addr, origin_count, origin_datatype, target_rank, target_disp, target_count, 
                                 target_datatype, win);
-	fprintf(fp, "Get\t%p\t%d\t%d\t%d\t%d\n", origin_addr, origin_count, target_rank, (int) target_disp, target_count);
+	fprintf(fp, "Get\t%p\t%d\n", origin_addr, target_rank);
 	return result;
 }
 
 int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype, int target_rank, 
-					MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Op op, MPI_Win win) //TODO
+					MPI_Aint target_disp, int target_count, MPI_Datatype target_datatype, MPI_Op op, MPI_Win win)
 {
 	int result = PMPI_Accumulate(origin_addr, origin_count, origin_datatype,target_rank, target_disp, target_count,
                                         target_datatype, op, win);
-	fprintf(fp, "Accumulate\t%p\t%d\t%d\t%d\t%d\n", origin_addr, origin_count, target_rank, (int) target_disp, target_count);
+	fprintf(fp, "Accumulate\t%p\t%d\n", origin_addr, target_rank);
 	return result;
 }
 
