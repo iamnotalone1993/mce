@@ -28,8 +28,9 @@ int main(int argc, char **argv)
 	{
 		MPI_Recv(&localBuffer, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
 
-		sharedBuffer = rank * 10;		
-		tracels(false, &sharedBuffer);
+		MPI_Win_lock(MPI_LOCK_SHARED, 1, 0, win);
+		MPI_Put(&localBuffer, 1, MPI_INT, 1, 0, 1, MPI_INT, win);
+		MPI_Win_unlock(1, win);
 
 		for (i = rank + 1; i < size; i++)
 		{
