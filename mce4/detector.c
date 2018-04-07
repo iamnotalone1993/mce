@@ -731,13 +731,14 @@ void detectMCEAcrossProc(List **aList, int size)
 int main(int argc, char **argv)
 {
 	clock_t begin = clock();
-	int size, i, index, **vclock, *tmpClock, tmpInt, eventCode, j, post;
+	int size, i, index, **vclock, *tmpClock, tmpInt, eventCode, j, post, send;
 	char fileName[15];
 	char *buffer, *tmpBuffer, *tmpStr, *pscw;
 	bool *barrier;
 	IntList *aIntList;
 
 	post = -1;
+	send = -1;
 	size = atoi(argv[1]);
 	pscw = (char *) malloc(size * sizeof(char));
 	barrier = (bool *) malloc(size * sizeof(bool));
@@ -964,11 +965,41 @@ int main(int argc, char **argv)
 				}
 				else if (eventCode == SEND)
 				{
-					// TO DO
+					send = index;
+					pscw[index] = 'A';
+                                	tmpBuffer = buffer;
+                                        tmpStr = getData(&tmpBuffer);
+                                        free(tmpStr);
+					tmpStr = getData(&tmpBuffer);
+					int dest = atoi(tmpStr);
+					free(tmpStr);
+					index = dest;
 				}
 				else if (eventCode == RECV)
 				{
-					// TO DO
+					if (send < 0)
+					{
+						pscw[index] = 'R';
+						tmpBuffer = buffer;
+                                                tmpStr = getData(&tmpBuffer);
+                                                free(tmpStr);
+                                                tmpStr = getData(&tmpBuffer);
+                                                send = atoi(tmpStr);
+                                                free(tmpStr);
+						index = send;
+					}
+					else //if (send >= 0)
+					{
+						for (i = 0; i < size; i++)
+						{
+							if (i != index)
+							{
+								vclock[index][i] = vclock[send][i];
+							}
+						}
+						vclock[index][index]++;
+						index = send;
+					}
 				}
 				else
 				{ 
@@ -1052,6 +1083,25 @@ int main(int argc, char **argv)
 		{
 			//do nothing
 		}
+		else if (pscw[index] == 'A')
+		{
+			vclock[index][index]++;
+			pscw[index] = 'N';
+			send = -1;
+		}
+		else if (pscw[index] == 'R')
+		{
+			for (i = 0; i < size; i++)
+			{
+				if (i != index)
+				{
+					vclock[index][i] = vclock[send][i];
+				}
+			}
+                        vclock[index][index]++;
+			pscw[index] = 'N';
+			send = -1;
+		}
 		else
 		{
 			//do nothing
@@ -1072,8 +1122,8 @@ int main(int argc, char **argv)
 
 	//End Of File
 	//detect MCE across processes
-	//printf("\nEOF\n");
-	//printAllList(aList, size);
+	printf("\nEOF\n");
+	printAllList(aList, size);
 	detectMCEAcrossProc(aList, size);
 	freeAllList(aList, size);
 	printf("Memory Usage: %dkB.\n", memUsage);
