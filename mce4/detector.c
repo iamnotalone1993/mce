@@ -1122,8 +1122,8 @@ int main(int argc, char **argv)
 
 	//End Of File
 	//detect MCE across processes
-	printf("\nEOF\n");
-	printAllList(aList, size);
+	//printf("\nEOF\n");
+	//printAllList(aList, size);
 	detectMCEAcrossProc(aList, size);
 	freeAllList(aList, size);
 	printf("Memory Usage: %dkB.\n", memUsage);
