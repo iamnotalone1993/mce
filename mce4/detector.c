@@ -801,8 +801,8 @@ int main(int argc, char **argv)
 					if (i == size)
 					{
 						/* detect MCE across processes */
-						printf("\nSfence\n");
-						printAllList(aList, size);
+						//printf("\nSfence\n");
+						//printAllList(aList, size);
 						int tmpMem = getMemory();
 						memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
 						detectMCEAcrossProc(aList, size);
@@ -856,8 +856,8 @@ int main(int argc, char **argv)
 						}
 			
 						/* dectect MCE across processes */
-						printf("\nEfence\n");
-						printAllList(aList, size);
+						//printf("\nEfence\n");
+						//printAllList(aList, size);
 						tmpMem = getMemory();
 						memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
 						detectMCEAcrossProc(aList, size);
@@ -932,8 +932,8 @@ int main(int argc, char **argv)
 					if (i == size)
 					{
 						/* detect MCE across processes */
-						printf("\nBARRIER\n");
-						printAllList(aList, size);
+						//printf("\nBARRIER\n");
+						//printAllList(aList, size);
 						int tmpMem = getMemory();
 						memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
 						detectMCEAcrossProc(aList, size);
@@ -1072,8 +1072,8 @@ int main(int argc, char **argv)
 
 	//End Of File
 	//detect MCE across processes
-	printf("\nEOF\n");
-	printAllList(aList, size);
+	//printf("\nEOF\n");
+	//printAllList(aList, size);
 	detectMCEAcrossProc(aList, size);
 	freeAllList(aList, size);
 	printf("Memory Usage: %dkB.\n", memUsage);
