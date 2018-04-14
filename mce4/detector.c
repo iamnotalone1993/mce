@@ -160,15 +160,23 @@ char *convertCode2Name(int code)
         }
 }
 
-void printClock(int *vclock, int size)
+void printClock(EVC *EVCList, int size)
 {
 	int i;
+
+	printf("clockBase=[");
+	for (i = 0; i < size - 1; i++)
+	{
+		gmp_printf("%Zd|", EVCList[i].clockBase);
+	}
+	gmp_printf("%Zd]\n", EVCList[i].clockBase);
+
 	printf("clock=[");
 	for (i = 0; i < size - 1; i++)
 	{
-		printf("%d|", vclock[i]);
+		gmp_printf("%Zd|", EVCList[i].clock);
 	}
-	printf("%d]\n", vclock[i]);
+	gmp_printf("%Zd]\n", EVCList[i].clock);
 }
 
 char *getData(char **buffer)
@@ -190,11 +198,11 @@ char *getData(char **buffer)
 	return tmpStr;
 }
 
-int isConcurrent(int *vclock1, int rank1, int *vclock2, int rank2)
+int isConcurrent(mpz_t clock1, mpz_t clock2)
 {
-	if (vclock1[rank2] >= vclock2[rank2])
+	if (mpz_divisible_p(clock1, clock2) != 0)
 		return 1;
-	if (vclock2[rank1] >= vclock1[rank1])
+	if (mpz_divisible_p(clock2, clock1) != 0)
 		return -1;
 	return 0;
 }
@@ -272,10 +280,10 @@ void printLoca(Loca *aLoca)
 	free(code);
 }
 
-Node *initNode(int *vclock)
+Node *initNode(mpz_t aClock)
 {
 	Node *aNode = (Node *) malloc(sizeof(Node));
-	aNode->clock = vclock;
+	mpz_init_set(aNode->clock, aClock);
 	aNode->commHead = NULL;
 	aNode->commTail = NULL;
 	aNode->locaHead = NULL;
@@ -286,7 +294,7 @@ Node *initNode(int *vclock)
 
 void freeNode(Node *aNode)
 {
-        free(aNode->clock);
+        mpz_clear(aNode->clock);
 
         while (aNode->commHead != NULL)
         {
@@ -309,7 +317,7 @@ void printNode(Node *aNode, int size)
 {
 	printf("Printing a Node...\n");
 	int i;
-	printClock(aNode->clock, size);
+	gmp_printf("clock=%Zd\n", aNode->clock);
 	
 	Comm *commTmp = aNode->commHead;
 	while (commTmp != NULL)
@@ -484,14 +492,14 @@ int removeIntList(IntList *aIntList)
 	}
 }
 
-void readEventWithinEpoch(FILE **pFile, int index, int **vclock, int size, List **aList, Chai *aChain, int endEvent)
+void readEventWithinEpoch(FILE **pFile, int index, EVC *EVCList, int size, List **aList, Chai *aChain, int endEvent)
 {
 	while (true)
         {
         	char *buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
         	if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL)
                 {
-			//printf("C3: %s", buffer);
+			//printf("CP2: %s", buffer);
 			//getchar();
                 	int eventCode = getEventCode(buffer);
                        	if (eventCode != endEvent)
@@ -534,7 +542,7 @@ void readEventWithinEpoch(FILE **pFile, int index, int **vclock, int size, List 
                         {
 				if (eventCode != COMPLETE)
 				{
-					vclock[index][index]++;
+					mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 				}
                         	break;
                         }
@@ -639,11 +647,11 @@ void detectMCEAcrossProc(List **aList, int size)
 				nodeTmp2 = aList[j]->head;
 				while (nodeTmp2 != NULL)
 				{
-					if (isConcurrent(nodeTmp1->clock, i, nodeTmp2->clock, j) == -1)
+					if (isConcurrent(nodeTmp1->clock, nodeTmp2->clock) == -1)
 					{
 						break;
 					}
-					else if (isConcurrent(nodeTmp1->clock, i, nodeTmp2->clock, j) == 1)
+					else if (isConcurrent(nodeTmp1->clock, nodeTmp2->clock) == 1)
 					{
 						//do nothing
 					}
@@ -731,11 +739,12 @@ void detectMCEAcrossProc(List **aList, int size)
 int main(int argc, char **argv)
 {
 	clock_t begin = clock();
-	int size, i, index, **vclock, *tmpClock, tmpInt, eventCode, j, post, send;
+	int size, i, index, tmpInt, eventCode, j, post, send;
 	char fileName[15];
 	char *buffer, *tmpBuffer, *tmpStr, *pscw;
 	bool *barrier;
 	IntList *aIntList;
+	EVC *EVCList;
 
 	post = -1;
 	send = -1;
@@ -744,7 +753,7 @@ int main(int argc, char **argv)
 	barrier = (bool *) malloc(size * sizeof(bool));
 	FILE **pFile = (FILE **) malloc(size * sizeof(FILE *));
 	List **aList = (List **) malloc(size * sizeof(List *));
-	vclock = (int **) malloc(size * sizeof(int *));
+	EVCList = (EVC *) malloc(size * sizeof(EVC));
 	for (i = 0; i < size; i++)
 	{	
 		pscw[i] = 'N';
@@ -755,10 +764,16 @@ int main(int argc, char **argv)
 		{
 			perror("Error opening file");
 		}
-		vclock[i] = (int *) malloc(size * sizeof(int));
-		for (j = 0; j < size; j++)
+
+		mpz_init_set_str(EVCList[i].clock, "1", BASE);
+		if (i == 0)
 		{
-			vclock[i][j] = 0;
+			mpz_init_set_str(EVCList[i].clockBase, "2", BASE);
+		}
+		else //if (i > 0)
+		{
+			mpz_init(EVCList[i].clockBase);
+			mpz_nextprime(EVCList[i].clockBase, EVCList[i-1].clockBase);
 		}
 
 		buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
@@ -783,12 +798,12 @@ int main(int argc, char **argv)
 			buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
 			if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL)
 			{              
-				//printf("C1: %s", buffer);
+				//printf("CP1: %s", buffer);
 				//getchar();
 				eventCode = getEventCode(buffer);
 				if (eventCode == FENCE)
 				{
-					vclock[index][index]++;
+					mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 					barrier[index] = true;
 					for (i = 0; i < size; i++)
 					{
@@ -809,54 +824,20 @@ int main(int argc, char **argv)
 						detectMCEAcrossProc(aList, size);
 						freeAllList(aList, size);
 
-						/* synchronize all clocks */
-						for (i = 0; i < size; i++)
-						{
-							for (j = 0; j < size; j++)
-						        {
-						        	if (i != j)
-						                {
-						                	vclock[i][j] = vclock[j][j];
-						                }
-						        }
-						}
-
 						for (i = 0; i < size; i++)
 						{	
-							tmpClock = (int *) malloc(size * sizeof(int));
-							for (j = 0; j < size; j++)
-							{
-								tmpClock[j] = vclock[i][j];
-							}
-							Node *aNode = initNode(tmpClock);
+							mpz_set_str(EVCList[i].clock, "1", BASE);
+							Node *aNode = initNode(EVCList[i].clock);
 							insertList(aList[i], aNode);
 							Chai *aChain = initChain(i);	
-						}
-
-						for (i = 0; i < size; i++)
-						{
-		                                        Chai *aChain = initChain(i);
-		                                        readEventWithinEpoch(pFile, i, vclock, size, aList, aChain, FENCE);
+		                                        readEventWithinEpoch(pFile, i, EVCList, size, aList, aChain, FENCE);
 
 		                                        /* detect MCE within an epoch */
 		                                        //printChain(aChain);
 		                                        detectMCEInProc(aChain);
 						}
-
-						/* synchronize all clocks */
-						for (i = 0; i < size; i++)
-						{
-							for (j = 0; j < size; j++)
-					                {
-					                        if (i != j)
-					                        {
-					                                vclock[i][j] = vclock[j][j];
-					                        }
-					                }
-
-						}
 			
-						/* dectect MCE across processes */
+						/* detect MCE across processes */
 						//printf("\nEfence\n");
 						//printAllList(aList, size);
 						tmpMem = getMemory();
@@ -903,23 +884,18 @@ int main(int argc, char **argv)
 				}
 				else if (eventCode == LOCK)
 				{
-					vclock[index][index]++;
-			                tmpClock = (int *) malloc(size * sizeof(int));
-			                for (i = 0; i < size; i++)
-			                {
-			                        tmpClock[i] = vclock[index][i];
-			                }
-					Node *aNode = initNode(tmpClock);
+					mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
+					Node *aNode = initNode(EVCList[index].clock);
 					insertList(aList[index], aNode);
 					Chai *aChain = initChain(index);
-			                readEventWithinEpoch(pFile, index, vclock, size, aList, aChain, UNLOCK);
+			                readEventWithinEpoch(pFile, index, EVCList, size, aList, aChain, UNLOCK);
 
 			                /* detect MCE within an epoch */
 			                detectMCEInProc(aChain);
 				}
 				else if (eventCode == BARRIER)
 				{
-					vclock[index][index]++;
+					mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 					barrier[index] = true;
 					for (i = 0; i < size; i++)
 					{
@@ -939,18 +915,6 @@ int main(int argc, char **argv)
 						memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
 						detectMCEAcrossProc(aList, size);
 						freeAllList(aList, size);
-
-						/* synchronize all clocks */
-						for (i = 0; i < size; i++)
-						{
-							for (j = 0; j < size; j++)
-						        {
-						        	if (i != j)
-						                {
-						                	vclock[i][j] = vclock[j][j];
-						                }
-						        }
-						}
 				
 						for (i = 0; i < size; i++)
 						{
@@ -990,14 +954,8 @@ int main(int argc, char **argv)
 					}
 					else //if (send >= 0)
 					{
-						for (i = 0; i < size; i++)
-						{
-							if (i != index)
-							{
-								vclock[index][i] = vclock[send][i];
-							}
-						}
-						vclock[index][index]++;
+						mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[send].clock);
+						mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 						index = send;
 					}
 				}
@@ -1021,17 +979,11 @@ int main(int argc, char **argv)
                 	}
 			else //if (target < 0)
 			{
-				vclock[index][index]++;
-                		tmpClock = (int *) malloc(size * sizeof(int));
-                		for (i = 0; i < size; i++)
-                		{
-                        		tmpClock[i] = vclock[index][i];
-                		}
-
-                		Node *aNode = initNode(tmpClock);
+				mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
+                		Node *aNode = initNode(EVCList[index].clock);
                 		insertList(aList[index], aNode);
                 		Chai *aChain = initChain(index);
-                		readEventWithinEpoch(pFile, index, vclock, size, aList, aChain, WAIT);
+                		readEventWithinEpoch(pFile, index, EVCList, size, aList, aChain, WAIT);
 
                 		/* detect MCE within an epoch */
 				detectMCEInProc(aChain);
@@ -1040,7 +992,7 @@ int main(int argc, char **argv)
 				{
         				if (i != index)
         				{
-                				vclock[index][i] = vclock[i][i];
+                				mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[i].clock);
         				}
 				}
 				pscw[index] = 'N';
@@ -1050,24 +1002,11 @@ int main(int argc, char **argv)
 		}
 		else if (pscw[index] == 'S')
 		{
-			vclock[index][index]++;
-			for (i = 0; i < size; i++)
-			{
-        			if (i != index && vclock[index][i] < vclock[post][i])
-        			{
-                			vclock[index][i] = vclock[post][i];
-        			}
-			}
-			tmpClock = (int *) malloc(size * sizeof(int));
-			for (i = 0; i < size; i++)
-			{
-        			tmpClock[i] = vclock[index][i];
-			}
-
-			Node *aNode = initNode(tmpClock);
+			mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[post].clock);
+			Node *aNode = initNode(EVCList[index].clock);
 			insertList(aList[index], aNode);
 			Chai *aChain = initChain(index);
-			readEventWithinEpoch(pFile, index, vclock, size, aList, aChain, COMPLETE);
+			readEventWithinEpoch(pFile, index, EVCList, size, aList, aChain, COMPLETE);
 
 			/* detect MCE within an epoch */
 			detectMCEInProc(aChain);
@@ -1076,7 +1015,7 @@ int main(int argc, char **argv)
 		}
 		else if (pscw[index] == 'C')
 		{
-			vclock[index][index]++;
+			mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 			pscw[index] = 'N';
 		}
 		else if (pscw[index] == 'W')
@@ -1085,20 +1024,14 @@ int main(int argc, char **argv)
 		}
 		else if (pscw[index] == 'A')
 		{
-			vclock[index][index]++;
+			mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 			pscw[index] = 'N';
 			send = -1;
 		}
 		else if (pscw[index] == 'R')
 		{
-			for (i = 0; i < size; i++)
-			{
-				if (i != index)
-				{
-					vclock[index][i] = vclock[send][i];
-				}
-			}
-                        vclock[index][index]++;
+			mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[send].clock);
+                        mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 			pscw[index] = 'N';
 			send = -1;
 		}
@@ -1113,17 +1046,18 @@ int main(int argc, char **argv)
 	for (i = 0; i < size; i++)
 	{
 		fclose(pFile[i]);
-		free(vclock[i]);
+		mpz_clear(EVCList[i].clock);
+		mpz_clear(EVCList[i].clockBase);
 	}
 	free(pFile);
-	free(vclock);
+	free(EVCList);
 	free(pscw);
 	free(barrier);
 
 	//End Of File
 	//detect MCE across processes
-	//printf("\nEOF\n");
-	//printAllList(aList, size);
+	printf("\nEOF\n");
+	printAllList(aList, size);
 	detectMCEAcrossProc(aList, size);
 	freeAllList(aList, size);
 	printf("Memory Usage: %dkB.\n", memUsage);

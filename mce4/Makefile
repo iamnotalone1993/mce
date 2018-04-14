@@ -8,7 +8,8 @@ num_procs := 3
 
 $(lib).o : $(lib).c
 
-$(dec) : $(dec).h
+$(dec) : $(dec).h $(dec).c
+	gcc $(dec).c -o $(dec) -lgmp
 
 lib.a : $(lib).o
 	ar -cr $@ $^

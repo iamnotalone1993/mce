@@ -7,8 +7,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <gmp.h>
 
 #define	BUFFER_SIZE		30
+#define BASE			10
 
 #define DEFAULT			0
 #define	FENCE			1
@@ -44,8 +46,13 @@ typedef struct Loca {
         struct Loca *next;
 } Loca;
 
+typedef struct EVC {
+	mpz_t clock;
+	mpz_t clockBase;
+} EVC;
+
 typedef struct Node {
-	int *clock;
+	mpz_t clock;
 	struct Comm *commHead;
 	struct Comm *commTail;
 	struct Loca *locaHead;
@@ -79,8 +86,8 @@ typedef struct IntList {
 int getEventCode(char *);
 char *convertCode2Name(int);
 char *getData(char **);
-void printClock(int *, int);
-int isConcurrent(int *, int, int *, int);
+void printClock(EVC *, int);
+int isConcurrent(mpz_t, mpz_t);
 
 Comm *initComm(int, int, char *);
 void freeComm(Comm *);
@@ -92,7 +99,7 @@ void freeLoca(Loca *);
 void insertLocaNode(Node *, Loca *);
 void printLoca(Loca *);
 
-Node *initNode(int *);
+Node *initNode(mpz_t);
 void freeNode(Node *);
 void printNode(Node *, int);
 
@@ -114,7 +121,7 @@ IntList *initIntList();
 void insertIntList(IntList *, Int *);
 int removeIntList(IntList *);
 
-void readEventWithinEpoch(FILE **, int, int **, int, List **, Chai *, int);
+void readEventWithinEpoch(FILE **, int, EVC *, int, List **, Chai *, int);
 void detectMCEInProc(Chai *);
 void detectMCEAcrossProc(List **, int);
 
