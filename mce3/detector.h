@@ -10,6 +10,7 @@
 
 #define	BUFFER_SIZE		30
 
+#define DEFAULT			0
 #define	FENCE			1
 #define	BARRIER			2
 #define	GET			3
@@ -54,8 +55,7 @@ typedef struct Node {
 
 typedef struct List {
         char *base;
-        int size;
-        int disp_unit;
+	int size;
         struct Node *head;
 	struct Node *tail;
 } List;
@@ -96,7 +96,7 @@ Node *initNode(int *);
 void freeNode(Node *);
 void printNode(Node *, int);
 
-List *initList(char *, int, int);
+List *initList(char *, int);
 void insertList(List *, Node *);
 void freeList(List *);
 void freeAllList(List **, int);

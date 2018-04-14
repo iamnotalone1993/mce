@@ -1,9 +1,7 @@
 CC := mpicc
-ana := analyzer
 bench_dir := ./benchmarks/
 bench := example
 prog := $(bench_dir)$(bench)
-preProg := out
 lib := profiler
 dec := detector
 num_procs := 3
@@ -15,20 +13,15 @@ $(dec) : $(dec).h
 lib.a : $(lib).o
 	ar -cr $@ $^
 
-.PHONY : ana all run dec clean
-$(ana) : $(ana).c
-
-#type "make ana" to analyze
-ana : $(ana)
-	./$(ana) $(prog).c $(preProg).c
+.PHONY : all run dec clean
 
 #type "make all" to compile
-all : $(preProg).c lib.a
-	$(CC) -Wall $^ -o $(preProg)
+all : $(prog).c lib.a
+	$(CC) -Wall $^ -o $(prog)
 
 #type "make run" to run
-run : $(preProg)
-	mpirun -np $(num_procs) --oversubscribe $(preProg)
+run : $(prog)
+	mpirun -np $(num_procs) --oversubscribe $(prog)
 
 #type "make dec" to detect
 dec : $(dec)
@@ -36,4 +29,4 @@ dec : $(dec)
 
 #type "make clean" to clean
 clean:
-	rm -f lib.a $(ana) $(preProg)* $(prog) $(lib).o trace* $(dec)
+	rm -f lib.a $(prog) $(lib).o ./traces/* $(dec)
