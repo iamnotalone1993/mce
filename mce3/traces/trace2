@@ -1,0 +1,9 @@
+Create	0xbfcf142c
+Fence
+Store	0xbfcf1430
+Put	0xbfcf1430	0
+Fence
+Lock
+Store	0xbfcf1430
+Put	0xbfcf1430	1
+Unlock

@@ -1,1 +1,16 @@
-
+Create	0xbf9f60ec
+Fence
+Get	0xbf9f60f0	1
+Fence
+Lock
+Store	0xbf9f60f0
+Put	0xbf9f60f0	1
+Unlock
+Start	1
+Get	0xbf9f60f0	1
+Store	0xbf9f60ec
+Complete
+Lock
+Store	0xbf9f60f0
+Put	0xbf9f60f0	1
+Unlock
