@@ -801,7 +801,6 @@ int main(int argc, char **argv)
 				eventCode = getEventCode(buffer);
 				if (eventCode == FENCE)
 				{
-					mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 					barrier[index] = true;
 					for (i = 0; i < size; i++)
 					{
@@ -815,8 +814,8 @@ int main(int argc, char **argv)
 					if (i == size)
 					{
 						/* detect MCE across processes */
-						//printf("\nSfence\n");
-						//printAllList(aList, size);
+						printf("\nSfence\n");
+						printAllList(aList, size);
 						int tmpMem = getMemory();
 						memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
 						detectMCEAcrossProc(aList, size);
@@ -836,8 +835,8 @@ int main(int argc, char **argv)
 						}
 			
 						/* detect MCE across processes */
-						//printf("\nEfence\n");
-						//printAllList(aList, size);
+						printf("\nEfence\n");
+						printAllList(aList, size);
 						tmpMem = getMemory();
 						memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
 						detectMCEAcrossProc(aList, size);
@@ -894,7 +893,6 @@ int main(int argc, char **argv)
 				}
 				else if (eventCode == BARRIER)
 				{
-					mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 					barrier[index] = true;
 					for (i = 0; i < size; i++)
 					{
@@ -908,8 +906,8 @@ int main(int argc, char **argv)
 					if (i == size)
 					{
 						/* detect MCE across processes */
-						//printf("\nBARRIER\n");
-						//printAllList(aList, size);
+						printf("\nBARRIER\n");
+						printAllList(aList, size);
 						int tmpMem = getMemory();
 						memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
 						detectMCEAcrossProc(aList, size);
@@ -917,6 +915,7 @@ int main(int argc, char **argv)
 				
 						for (i = 0; i < size; i++)
 						{
+							mpz_set_str(EVCList[i].clock, "1", BASE);
 							barrier[i] = false;
 						}
 						index = 0;
@@ -954,6 +953,7 @@ int main(int argc, char **argv)
 					else //if (send >= 0)
 					{
 						mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[send].clock);
+						printClock(EVCList, size);
 						index = send;
 					}
 				}
@@ -1028,7 +1028,6 @@ int main(int argc, char **argv)
 		else if (pscw[index] == 'R')
 		{
 			mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[send].clock);
-                        mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 			pscw[index] = 'N';
 			send = -1;
 		}
@@ -1053,8 +1052,8 @@ int main(int argc, char **argv)
 
 	//End Of File
 	//detect MCE across processes
-	//printf("\nEOF\n");
-	//printAllList(aList, size);
+	printf("\nEOF\n");
+	printAllList(aList, size);
 	detectMCEAcrossProc(aList, size);
 	freeAllList(aList, size);
 	printf("Memory Usage: %dkB.\n", memUsage);
