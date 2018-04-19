@@ -732,7 +732,7 @@ int main(int argc, char **argv)
 {
 	clock_t begin = clock();
 	int size, i, index, **vclock, *tmpClock, tmpInt, eventCode, j, post, send;
-	char fileName[15];
+	char fileName[25];
 	char *buffer, *tmpBuffer, *tmpStr, *pscw;
 	bool *barrier;
 	IntList *aIntList;
