@@ -738,7 +738,7 @@ int main(int argc, char **argv)
 {
 	clock_t begin = clock();
 	int size, i, index, tmpInt, eventCode, j, post, send;
-	char fileName[15];
+	char fileName[25];
 	char *buffer, *tmpBuffer, *tmpStr, *pscw;
 	bool *barrier;
 	IntList *aIntList, *aIntList2;
@@ -953,7 +953,7 @@ int main(int argc, char **argv)
 					else //if (send >= 0)
 					{
 						mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[send].clock);
-						printClock(EVCList, size);
+			                        mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 						index = send;
 					}
 				}
@@ -990,6 +990,7 @@ int main(int argc, char **argv)
 				while ((aInt = removeIntList(aIntList2)) != NULL)
 				{
                 			mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[aInt->num].clock);
+		                        mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 					freeInt(aInt);
 				}
 				pscw[index] = 'N';
@@ -1000,6 +1001,7 @@ int main(int argc, char **argv)
 		else if (pscw[index] == 'S')
 		{
 			mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[post].clock);
+			mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 			Node *aNode = initNode(EVCList[index].clock);
 			insertList(aList[index], aNode);
 			Chai *aChain = initChain(index);
@@ -1028,6 +1030,7 @@ int main(int argc, char **argv)
 		else if (pscw[index] == 'R')
 		{
 			mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[send].clock);
+                        mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 			pscw[index] = 'N';
 			send = -1;
 		}
