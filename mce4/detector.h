@@ -118,8 +118,10 @@ Int *initInt(int);
 void freeInt(Int *);
 
 IntList *initIntList();
+bool isIntListEmpty(IntList *);
 void insertIntList(IntList *, Int *);
 Int *removeIntList(IntList *);
+void removeAnIntList(IntList *, int);
 
 void readEventWithinEpoch(FILE **, int, EVC *, int, List **, Chai *, int);
 void detectMCEInProc(Chai *);
