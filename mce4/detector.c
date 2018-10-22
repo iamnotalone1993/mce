@@ -364,7 +364,7 @@ void freeList(List *aList)
 	{
 		aList->tail = aList->head;
 		aList->head = aList->head->next;
-		free(aList->tail);
+		freeNode(aList->tail);
 	}
 	aList->tail = NULL;
 }
@@ -539,7 +539,7 @@ void readEventWithinEpoch(FILE **pFile, int index, EVC *EVCList, int size, List 
         	char *buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
         	if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL)
                 {
-			//printf("CP2: %s", buffer);
+			printf("CP3: %s", buffer);
 			//getchar();
                 	int eventCode = getEventCode(buffer);
                        	if (eventCode != endEvent)
@@ -573,10 +573,15 @@ void readEventWithinEpoch(FILE **pFile, int index, EVC *EVCList, int size, List 
 					Loca *aLoca2 = initLoca(eventCode, varAddr2);
 					insertChain(aChain, aLoca2);
 				}
-				else 
-				{ 
-					//do nothing
+				else if (eventCode == CREATE || eventCode == BARRIER || eventCode == FENCE) 
+				{
+					//skip
+					printf("CP4: %s", buffer);
+					//getchar();
+					free(buffer);
+					break;
 				}
+				else {/* do nothing */}
                     	}
                         else //if (eventCode == endEvent)
                         {
@@ -584,6 +589,7 @@ void readEventWithinEpoch(FILE **pFile, int index, EVC *EVCList, int size, List 
 				{
 					mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
 				}
+				free(buffer);
                         	break;
                         }
           	}
@@ -781,10 +787,24 @@ int main(int argc, char **argv)
 	clock_t begin = clock();
 	int size, i, index, tmpInt, eventCode, j, post, start, send, dest;
 	char fileName[25];
-	char *buffer, *tmpBuffer, *tmpStr, *pscw;
+	char *buffer, *tmpBuffer, *tmpStr;
+
+	char *pscw;
+	/* 
+		P: POST 
+		S: START
+		C: COMPLETE
+		W: WAIT 
+		A: SEND
+		R: RECEIVE
+		N: NORMAL
+	*/
+
 	bool *barrier, create;
 	IntList *aIntListPost, *aIntListStart, *aIntListComplete, *aIntListWait;
 	EVC *EVCList;
+
+	unsigned long long int count = 0;
 
 	post = -1;
 	start = -1;
@@ -810,15 +830,13 @@ int main(int argc, char **argv)
 
 		if (i == 0)
 		{
-			mpz_init_set_str(EVCList[i].clock, "2", BASE);
 			mpz_init_set_str(EVCList[i].clockBase, "2", BASE);
 		}
 		else //if (i > 0)
 		{
-			mpz_init(EVCList[i].clock);
 			mpz_init(EVCList[i].clockBase);
-			mpz_nextprime(EVCList[i].clock, EVCList[i-1].clock);
 			mpz_nextprime(EVCList[i].clockBase, EVCList[i-1].clockBase);
+			mpz_init_set(EVCList[i].clock, EVCList[i].clockBase);
 		}
 
 		aList[i] = initList(NULL, size);
@@ -828,7 +846,7 @@ int main(int argc, char **argv)
 	while (index < size)
 	{
 		/* DEBUGGING ZONE */
-		//printf("CP1: index=%d pscw=%c post=%d start=%d\n", index, pscw[index], post, start);
+		printf("CP1: index=%d pscw=%c post=%d start=%d\n", index, pscw[index], post, start);
 		/**/
 
 		if (pscw[index] == 'N')
@@ -838,7 +856,9 @@ int main(int argc, char **argv)
 			{              
 
 				/* DEBUGGING ZONE */
-				//printf("CP2: %s", buffer);
+				printf("CP2: %s", buffer);
+				count++;
+				printf("%d\n", count);
 				//getchar();
 				/**/
 
@@ -884,15 +904,7 @@ int main(int argc, char **argv)
                                         {
                                                 for (i = 0; i < size; i++)
                                                 {
-                                                        if (i == 0)
-                                                        {
-                                                                mpz_set_str(EVCList[i].clock, "2", BASE);
-                                                        }
-                                                        else //if (i > 0)
-                                                        {
-                                                                mpz_nextprime(EVCList[i].clock, EVCList[i-1].clock);
-                                                        }
-
+                                                        mpz_set(EVCList[i].clock, EVCList[i].clockBase);
                                                         barrier[i] = false;
                                                 }
 						create = false;
@@ -931,27 +943,28 @@ int main(int argc, char **argv)
 						//printAllList(aList, size);
 						//getchar();
 						/**/
-
+			
+						printf("CP10\n");
 						int tmpMem = getMemory();
 						memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
 						detectMCEAcrossProc(aList, size);
 						freeAllList(aList, size);
 
+						printf("CP11\n");
 						for (i = 0; i < size; i++)
                                                 {
-                                                        if (i == 0)
-                                                        {
-                                                                mpz_set_str(EVCList[i].clock, "2", BASE);
-                                                        }
-                                                        else //if (i > 0)
-                                                        {
-                                                                mpz_nextprime(EVCList[i].clock, EVCList[i-1].clock);
-                                                        }
+							printf("CP111\n");
+                                                        mpz_set(EVCList[i].clock, EVCList[i].clockBase);
 
+							printf("CP112\n");
 							Node *aNode = initNode(EVCList[i].clock);
+							printf("CP113\n");
 							insertList(aList[i], aNode);
+							printf("CP114\n");
 							Chai *aChain = initChain(i);	
+							printf("CP115\n");
 		                                        readEventWithinEpoch(pFile, i, EVCList, size, aList, aChain, FENCE);
+							printf("CP116\n");
 
 		                                        /* detect MCE within an epoch */
 		                                        //printChain(aChain);
@@ -966,6 +979,8 @@ int main(int argc, char **argv)
 						//getchar();
 						/**/
 
+						printf("CP15\n");
+
 						tmpMem = getMemory();
 						memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
 						detectMCEAcrossProc(aList, size);
@@ -973,18 +988,12 @@ int main(int argc, char **argv)
 				
 						for (i = 0; i < size; i++)
                                                 {
-                                                        if (i == 0)
-                                                        {
-                                                                mpz_set_str(EVCList[i].clock, "2", BASE);
-                                                        }
-                                                        else //if (i > 0)
-                                                        {
-                                                                mpz_nextprime(EVCList[i].clock, EVCList[i-1].clock);
-                                                        }
-
+                                                        mpz_set(EVCList[i].clock, EVCList[i].clockBase);
 							barrier[i] = false;
 						}
 						index = 0;
+
+						printf("CP16\n");
 					}					
 				}
 				else if (eventCode == POST)
@@ -1070,15 +1079,7 @@ int main(int argc, char **argv)
 				
 						for (i = 0; i < size; i++)
 						{
-                					if (i == 0)
-                					{
-                        					mpz_set_str(EVCList[i].clock, "2", BASE);
-                					}
-             	   					else //if (i > 0)
-                					{
-                        					mpz_nextprime(EVCList[i].clock, EVCList[i-1].clock);
-                					}
-
+                					mpz_set(EVCList[i].clock, EVCList[i].clockBase);
 							barrier[i] = false;
 						}
 						index = 0;
