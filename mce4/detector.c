@@ -539,7 +539,7 @@ void readEventWithinEpoch(FILE **pFile, int index, EVC *EVCList, int size, List 
         	char *buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
         	if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL)
                 {
-			printf("CP3: %s", buffer);
+			//printf("CP3: %s", buffer);
 			//getchar();
                 	int eventCode = getEventCode(buffer);
                        	if (eventCode != endEvent)
@@ -576,7 +576,7 @@ void readEventWithinEpoch(FILE **pFile, int index, EVC *EVCList, int size, List 
 				else if (eventCode == CREATE || eventCode == BARRIER || eventCode == FENCE) 
 				{
 					//skip
-					printf("CP4: %s", buffer);
+					//printf("CP4: %s", buffer);
 					//getchar();
 					free(buffer);
 					break;
@@ -804,7 +804,7 @@ int main(int argc, char **argv)
 	IntList *aIntListPost, *aIntListStart, *aIntListComplete, *aIntListWait;
 	EVC *EVCList;
 
-	unsigned long long int count = 0;
+	//unsigned long long int count = 0;
 
 	post = -1;
 	start = -1;
@@ -846,7 +846,7 @@ int main(int argc, char **argv)
 	while (index < size)
 	{
 		/* DEBUGGING ZONE */
-		printf("CP1: index=%d pscw=%c post=%d start=%d\n", index, pscw[index], post, start);
+		//printf("CP1: index=%d pscw=%c post=%d start=%d\n", index, pscw[index], post, start);
 		/**/
 
 		if (pscw[index] == 'N')
@@ -856,9 +856,9 @@ int main(int argc, char **argv)
 			{              
 
 				/* DEBUGGING ZONE */
-				printf("CP2: %s", buffer);
-				count++;
-				printf("%d\n", count);
+				//printf("CP2: %s", buffer);
+				//count++;
+				//printf("%d\n", count);
 				//getchar();
 				/**/
 
@@ -870,8 +870,8 @@ int main(int argc, char **argv)
                                                 /* detect MCE across processes */
 
                                                 /* DEBUGGING ZONE */
-                                                //printf("\nCREATE\n");
-                                                //printAllList(aList, size);
+                                                printf("\nCREATE\n");
+                                                printAllList(aList, size);
                                                 //getchar();
                                                 /* */
 
@@ -939,32 +939,24 @@ int main(int argc, char **argv)
 						/* detect MCE across processes */
 
 						/* DEBUGGING ZONE */
-						//printf("\nSfence\n");
-						//printAllList(aList, size);
+						printf("\nSfence\n");
+						printAllList(aList, size);
 						//getchar();
 						/**/
 			
-						printf("CP10\n");
 						int tmpMem = getMemory();
 						memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
 						detectMCEAcrossProc(aList, size);
 						freeAllList(aList, size);
 
-						printf("CP11\n");
 						for (i = 0; i < size; i++)
                                                 {
-							printf("CP111\n");
                                                         mpz_set(EVCList[i].clock, EVCList[i].clockBase);
 
-							printf("CP112\n");
 							Node *aNode = initNode(EVCList[i].clock);
-							printf("CP113\n");
 							insertList(aList[i], aNode);
-							printf("CP114\n");
 							Chai *aChain = initChain(i);	
-							printf("CP115\n");
 		                                        readEventWithinEpoch(pFile, i, EVCList, size, aList, aChain, FENCE);
-							printf("CP116\n");
 
 		                                        /* detect MCE within an epoch */
 		                                        //printChain(aChain);
@@ -974,12 +966,10 @@ int main(int argc, char **argv)
 						/* detect MCE across processes */
 
 						/* DEBUGGING ZONE */
-						//printf("\nEfence\n");
-						//printAllList(aList, size);
+						printf("\nEfence\n");
+						printAllList(aList, size);
 						//getchar();
 						/**/
-
-						printf("CP15\n");
 
 						tmpMem = getMemory();
 						memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
@@ -992,8 +982,6 @@ int main(int argc, char **argv)
 							barrier[i] = false;
 						}
 						index = 0;
-
-						printf("CP16\n");
 					}					
 				}
 				else if (eventCode == POST)
@@ -1067,8 +1055,8 @@ int main(int argc, char **argv)
 						/* detect MCE across processes */
 	
 						/* DEBUGGING ZONE */
-						//printf("\nBARRIER\n");
-						//printAllList(aList, size);
+						printf("\nBARRIER\n");
+						printAllList(aList, size);
 						//getchar();
 						/**/
 
@@ -1266,6 +1254,7 @@ int main(int argc, char **argv)
 				}
 				else 
 				{
+					//freeInt(aInt);
 					pscw[index] = 'S';
 					start = -1;
 					index = post;
@@ -1386,8 +1375,8 @@ int main(int argc, char **argv)
 	//detect MCE across processes
 
 	/* DEBUGGING ZONE */
-	//printf("\nEOF\n");
-	//printAllList(aList, size);
+	printf("\nEOF\n");
+	printAllList(aList, size);
 	//getchar();
 	/**/
 
