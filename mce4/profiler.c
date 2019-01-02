@@ -15,7 +15,7 @@ void tracels(bool isLoad, void *varaddr)
 int MPI_Init(int *argc, char ***argv)
 {
 	int rank;
-	char fileName[15];
+	char fileName[25];
 
 	int result = PMPI_Init(argc, argv);
 	execTime = PMPI_Wtime();
@@ -100,8 +100,8 @@ int MPI_Win_post(MPI_Group group, int assert, MPI_Win win)
 	{
 		ranks1[i] = i;
 	}
-	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
-	MPI_Group_translate_ranks(group, size, ranks1, worldGroup, ranks2);
+	PMPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
+	PMPI_Group_translate_ranks(group, size, ranks1, worldGroup, ranks2);
 	fprintf(fp, "Post\t");
 	for (i = 0; i < size - 1; i++)
 	{
@@ -125,8 +125,8 @@ int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
 	{
 		ranks1[i] = i;
 	}
-	MPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
-	MPI_Group_translate_ranks(group, size, ranks1, worldGroup, ranks2);
+	PMPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
+	PMPI_Group_translate_ranks(group, size, ranks1, worldGroup, ranks2);
 	fprintf(fp, "Start\t");
 	for (i = 0; i < size - 1; i++)
 	{
@@ -183,6 +183,37 @@ int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, M
 int MPI_Barrier(MPI_Comm comm)
 {
 	int result = PMPI_Barrier(comm);
-        fprintf(fp, "Barrier\n");
+	int res;
+	if (PMPI_Comm_compare(comm, MPI_COMM_WORLD, &res) == MPI_IDENT)
+	{
+        	fprintf(fp, "Barrier\n");
+	}
+	else if (PMPI_Comm_compare(comm, MPI_COMM_SELF, &res) == MPI_IDENT)
+	{
+		//do nothing
+	}
+	else 
+	{
+        	int size, i;
+        	MPI_Group worldGroup, group;
+		PMPI_Comm_group(comm, &group);
+        	PMPI_Group_size(group, &size);
+        	int *ranks1 = (int *) malloc(size * sizeof(int));
+        	int *ranks2 = (int *) malloc(size * sizeof(int));
+        	for (i = 0; i < size; i++)
+        	{
+                	ranks1[i] = i;
+        	}
+        	PMPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
+        	PMPI_Group_translate_ranks(group, size, ranks1, worldGroup, ranks2);
+        	fprintf(fp, "Barrier\t");
+        	for (i = 0; i < size - 1; i++)
+        	{
+                	fprintf(fp, "%d\t", ranks2[i]);
+        	}
+        	fprintf(fp, "%d\n", ranks2[i]);
+        	free(ranks1);
+        	free(ranks2);
+	}
 	return result;
 }
