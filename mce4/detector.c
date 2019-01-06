@@ -160,23 +160,23 @@ char *convertCode2Name(int code)
         }
 }
 
-void printClock(EVC *EVCList, int size)
+void printClock(FILE *fp, EVC *EVCList, int size)
 {
 	int i;
 
-	printf("clockBase=[");
+	fprintf(fp, "clockBase=[");
 	for (i = 0; i < size - 1; i++)
 	{
-		gmp_printf("%Zd|", EVCList[i].clockBase);
+		gmp_fprintf(fp, "%Zd|", EVCList[i].clockBase);
 	}
-	gmp_printf("%Zd]\n", EVCList[i].clockBase);
+	gmp_fprintf(fp, "%Zd]\n", EVCList[i].clockBase);
 
-	printf("clock=[");
+	fprintf(fp, "clock=[");
 	for (i = 0; i < size - 1; i++)
 	{
-		gmp_printf("%Zd|", EVCList[i].clock);
+		gmp_fprintf(fp, "%Zd|", EVCList[i].clock);
 	}
-	gmp_printf("%Zd]\n", EVCList[i].clock);
+	gmp_fprintf(fp, "%Zd]\n", EVCList[i].clock);
 }
 
 char *getData(char **buffer)
@@ -237,10 +237,10 @@ void insertCommNode(Node *aNode, Comm* aComm)
 	}
 }
 
-void printComm(Comm *aComm)
+void printComm(FILE *fp, Comm *aComm)
 {
 	char *code = convertCode2Name(aComm->code);
-	printf("code=%s target_rank=%d target_addr=%s\n", code, aComm->target_rank, aComm->target_addr);
+	fprintf(fp, "code=%s target_rank=%d target_addr=%s\n", code, aComm->target_rank, aComm->target_addr);
 	free(code);
 }
 
@@ -273,10 +273,10 @@ void insertLocaNode(Node *aNode, Loca *aLoca)
         }
 }
 
-void printLoca(Loca *aLoca)
+void printLoca(FILE *fp, Loca *aLoca)
 {
 	char *code = convertCode2Name(aLoca->code);
-	printf("code=%s varAddr=%s\n", code, aLoca->varAddr);
+	fprintf(fp, "code=%s varAddr=%s\n", code, aLoca->varAddr);
 	free(code);
 }
 
@@ -313,23 +313,23 @@ void freeNode(Node *aNode)
         free(aNode);
 }
 
-void printNode(Node *aNode, int size)
+void printNode(FILE *fp, Node *aNode, int size)
 {
-	printf("Printing a Node...\n");
+	fprintf(fp, "Printing a Node...\n");
 	int i;
-	gmp_printf("clock=%Zd\n", aNode->clock);
+	gmp_fprintf(fp, "clock=%Zd\n", aNode->clock);
 	
 	Comm *commTmp = aNode->commHead;
 	while (commTmp != NULL)
 	{
-		printComm(commTmp);
+		printComm(fp, commTmp);
 		commTmp = commTmp->next;
 	}
 
 	Loca *locaTmp = aNode->locaHead;
 	while (locaTmp != NULL)
 	{
-		printLoca(locaTmp);
+		printLoca(fp, locaTmp);
 		locaTmp = locaTmp->next;
 	}
 }
@@ -378,26 +378,26 @@ void freeAllList(List **aList, int size)
 	}
 }
 
-void printList(List *aList, int size)
+void printList(FILE *fp, List *aList, int size)
 {
-	printf("Printing a List...\n");
-	printf("base=%s size=%d\n", aList->base, aList->size);
+	fprintf(fp, "Printing a List...\n");
+	fprintf(fp, "base=%s size=%d\n", aList->base, aList->size);
 
 	Node *tmp = aList->head;
 	while (tmp != NULL)
 	{
-		printNode(tmp, size);
+		printNode(fp, tmp, size);
 		tmp = tmp->next;
 	}
 }
 
-void printAllList(List **aList, int size)
+void printAllList(FILE *fp, List **aList, int size)
 {
 	int i;
-	printf("Printing all Lists...\n");
+	fprintf(fp, "Printing all Lists...\n");
 	for (i = 0; i < size; i++)
 	{
-		printList(aList[i], size);
+		printList(fp, aList[i], size);
 	}
 }
 
@@ -714,9 +714,7 @@ void detectMCEAcrossProc(List **aList, int size)
 								{
 									char *code1 = convertCode2Name(commTmp1->code);
 									char *code2 = convertCode2Name(commTmp2->code);
-                                        				//printf("MCE across processes on %s in P%d between %s in P%d and %s in P%d\n",
-                                                        			//commTmp1->target_addr, commTmp1->target_rank, 
-										//code1, i, code2, j);
+                                        				printf("MCE across processes on %s in P%d between %s in P%d and %s in P%d\n", commTmp1->target_addr, commTmp1->target_rank, code1, i, code2, j);
 									free(code1);
 									free(code2);
 								}
@@ -735,8 +733,7 @@ void detectMCEAcrossProc(List **aList, int size)
 								{
 									char *code1 = convertCode2Name(commTmp1->code);
 									char *code2 = convertCode2Name(locaTmp2->code);
-									printf("MCE across processes on %s in P%d between %s in P%d and %s in P%d\n",
-                                                        				commTmp1->target_addr, j, code1, i, code2, j);
+									printf("MCE across processes on %s in P%d between %s in P%d and %s in P%d\n", commTmp1->target_addr, j, code1, i, code2, j);
 									free(code1);
 									free(code2);
 								}
@@ -805,6 +802,14 @@ int main(int argc, char **argv)
 	EVC *EVCList;
 
 	//unsigned long long int count = 0;
+	
+	/* DEBUGGING ZONE */
+	FILE *fp = fopen("./out", "w");
+	if (fp == NULL)
+        {
+        	perror("Error opening file");
+	}
+	/**/
 
 	post = -1;
 	start = -1;
@@ -870,8 +875,8 @@ int main(int argc, char **argv)
                                                 /* detect MCE across processes */
 
                                                 /* DEBUGGING ZONE */
-                                                //printf("\nCREATE\n");
-                                                //printAllList(aList, size);
+                                                fprintf(fp, "\nCREATE\n");
+                                                printAllList(fp, aList, size);
                                                 //getchar();
                                                 /* */
 
@@ -939,9 +944,8 @@ int main(int argc, char **argv)
 						/* detect MCE across processes */
 
 						/* DEBUGGING ZONE */
-						//printf("\nSfence\n");
-						//printAllList(aList, size);
-						//getchar();
+						fprintf(fp, "\nSfence\n");
+						printAllList(fp, aList, size);
 						/**/
 			
 						int tmpMem = getMemory();
@@ -966,9 +970,8 @@ int main(int argc, char **argv)
 						/* detect MCE across processes */
 
 						/* DEBUGGING ZONE */
-						//printf("\nEfence\n");
-						//printAllList(aList, size);
-						//getchar();
+						fprintf(fp, "\nEfence\n");
+						printAllList(fp, aList, size);
 						/**/
 
 						tmpMem = getMemory();
@@ -1061,9 +1064,8 @@ int main(int argc, char **argv)
 							/* detect MCE across processes */
 	
 							/* DEBUGGING ZONE */
-							//printf("\nBARRIER\n");
-							//printAllList(aList, size);
-							//getchar();
+							fprintf(fp, "\nBARRIER\n");
+							printAllList(fp, aList, size);
 							/**/
 
 							int tmpMem = getMemory();
@@ -1408,9 +1410,9 @@ int main(int argc, char **argv)
 	//detect MCE across processes
 
 	/* DEBUGGING ZONE */
-	//printf("\nEOF\n");
-	//printAllList(aList, size);
-	//getchar();
+	fprintf(fp, "\nEOF\n");
+	printAllList(fp, aList, size);
+	fclose(fp);
 	/**/
 
 	detectMCEAcrossProc(aList, size);

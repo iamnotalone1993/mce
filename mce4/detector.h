@@ -86,29 +86,29 @@ typedef struct IntList {
 int getEventCode(char *);
 char *convertCode2Name(int);
 char *getData(char **);
-void printClock(EVC *, int);
+void printClock(FILE *, EVC *, int);
 int isConcurrent(mpz_t, mpz_t);
 
 Comm *initComm(int, int, char *);
 void freeComm(Comm *);
 void insertCommNode(Node *, Comm *);
-void printComm(Comm *);
+void printComm(FILE *, Comm *);
 
 Loca *initLoca(int, char *);
 void freeLoca(Loca *);
 void insertLocaNode(Node *, Loca *);
-void printLoca(Loca *);
+void printLoca(FILE *, Loca *);
 
 Node *initNode(mpz_t);
 void freeNode(Node *);
-void printNode(Node *, int);
+void printNode(FILE *, Node *, int);
 
 List *initList(char *, int);
 void insertList(List *, Node *);
 void freeList(List *);
 void freeAllList(List **, int);
-void printList(List *, int);
-void printAllList(List **, int);
+void printList(FILE *, List *, int);
+void printAllList(FILE *, List **, int);
 
 Chai *initChain(int);
 void insertChain(Chai *, Loca *);
