@@ -183,12 +183,14 @@ int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, M
 int MPI_Barrier(MPI_Comm comm)
 {
 	int result = PMPI_Barrier(comm);
-	int res;
-	if (PMPI_Comm_compare(comm, MPI_COMM_WORLD, &res) == MPI_IDENT)
+	int res1, res2;
+	PMPI_Comm_compare(comm, MPI_COMM_WORLD, &res1);
+	PMPI_Comm_compare(comm, MPI_COMM_SELF, &res2);
+	if (res1 == MPI_IDENT)
 	{
         	fprintf(fp, "Barrier\n");
 	}
-	else if (PMPI_Comm_compare(comm, MPI_COMM_SELF, &res) == MPI_IDENT)
+	else if (res2 == MPI_IDENT)
 	{
 		//do nothing
 	}
