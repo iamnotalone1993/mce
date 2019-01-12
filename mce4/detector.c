@@ -968,17 +968,24 @@ int main(int argc, char **argv)
                                 	tmpBuffer = buffer;
                                 	tmpStr = getData(&tmpBuffer);
                                         free(tmpStr);
-                                        aIntListStart = initIntList();
-					aIntListComplete = initIntList();
-                                        while (tmpBuffer != NULL)
-                                        {
-                                        	tmpStr = getData(&tmpBuffer);
-                                                Int *aInt = initInt(atoi(tmpStr));
-                                                insertIntList(aIntListStart, aInt);
-						free(tmpStr);
-                                        }
+					if (tmpBuffer == NULL)
+					{
+						fgets(buffer, BUFFER_SIZE, pFile[index]);
+					}
+					else //if (tmpBuffer != NULL)
+					{
+						aIntListStart = initIntList();
+						aIntListComplete = initIntList();
+                                        	while (tmpBuffer != NULL)
+                                        	{
+                                        		tmpStr = getData(&tmpBuffer);
+                                                	Int *aInt = initInt(atoi(tmpStr));
+                                                	insertIntList(aIntListStart, aInt);
+							free(tmpStr);
+                                        	}
 
-					pscw[index] = 'S';
+						pscw[index] = 'S';
+					}
 				}
 				else if (eventCode == LOCK)
 				{

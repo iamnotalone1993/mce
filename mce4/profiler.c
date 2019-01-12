@@ -149,7 +149,7 @@ int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
 	PMPI_Group_size(group, &size);
 	if (size == 0)
 	{
-		//do nothing
+		fprintf(fp, "Start\n");
 	}
 	else //if (size != 0)
 	{
