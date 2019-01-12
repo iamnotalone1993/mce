@@ -116,25 +116,33 @@ int MPI_Win_post(MPI_Group group, int assert, MPI_Win win)
 int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
 {
 	int result = PMPI_Win_start(group, assert, win);
-	int size, i;
-	MPI_Group worldGroup;
+	int size;
 	PMPI_Group_size(group, &size);
-	int *ranks1 = (int *) malloc(size * sizeof(int));
-	int *ranks2 = (int *) malloc(size * sizeof(int));
-	for (i = 0; i < size; i++)
+	if (size == 0)
 	{
-		ranks1[i] = i;
+		//do nothing
 	}
-	PMPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
-	PMPI_Group_translate_ranks(group, size, ranks1, worldGroup, ranks2);
-	fprintf(fp, "Start\t");
-	for (i = 0; i < size - 1; i++)
+	else //if (size != 0)
 	{
-		fprintf(fp, "%d\t", ranks2[i]);
+		int i;
+		MPI_Group worldGroup;
+		int *ranks1 = (int *) malloc(size * sizeof(int));
+		int *ranks2 = (int *) malloc(size * sizeof(int));
+		for (i = 0; i < size; i++)
+		{
+			ranks1[i] = i;
+		}
+		PMPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
+		PMPI_Group_translate_ranks(group, size, ranks1, worldGroup, ranks2);
+		fprintf(fp, "Start\t");
+		for (i = 0; i < size - 1; i++)
+		{
+			fprintf(fp, "%d\t", ranks2[i]);
+		}
+		fprintf(fp, "%d\n", ranks2[i]);
+		free(ranks1);
+		free(ranks2);
 	}
-	fprintf(fp, "%d\n", ranks2[i]);
-	free(ranks1);
-	free(ranks2);
 	return result;
 }
 
@@ -183,16 +191,11 @@ int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, M
 int MPI_Barrier(MPI_Comm comm)
 {
 	int result = PMPI_Barrier(comm);
-	int res1, res2;
-	PMPI_Comm_compare(comm, MPI_COMM_WORLD, &res1);
-	PMPI_Comm_compare(comm, MPI_COMM_SELF, &res2);
-	if (res1 == MPI_IDENT)
-	{
-        	fprintf(fp, "Barrier\n");
-	}
-	else if (res2 == MPI_IDENT)
-	{
-		//do nothing
+	int res;
+	PMPI_Comm_compare(comm, MPI_COMM_SELF, &res);
+	if (res == MPI_IDENT) 
+	{ 
+		//do nothing 
 	}
 	else 
 	{
@@ -200,7 +203,7 @@ int MPI_Barrier(MPI_Comm comm)
         	MPI_Group group;
 		PMPI_Comm_group(comm, &group);
 		PMPI_Comm_size(MPI_COMM_WORLD, &globalSize);
-        	PMPI_Group_size(group, &size);
+        	PMPI_Comm_size(comm, &size);
 		if (size == globalSize)
 		{
 			fprintf(fp, "Barrier\n");
