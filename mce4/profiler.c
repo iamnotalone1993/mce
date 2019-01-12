@@ -50,7 +50,36 @@ int MPI_Finalize()
 int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, MPI_Win *win)
 {
 	int result = PMPI_Win_create(base, size, disp_unit, info, comm, win);
-	fprintf(fp, "Create\t%p\n", base);
+	int globalSize, commSize;
+        MPI_Group group;
+        PMPI_Comm_group(comm, &group);
+        PMPI_Comm_size(MPI_COMM_WORLD, &globalSize);
+        PMPI_Comm_size(comm, &commSize);
+        if (commSize == globalSize)
+        {
+        	fprintf(fp, "Create\t%p\n", base);
+        }
+        else //if (size != globalSize)
+        {
+        	int i;
+                int *ranks1 = (int *) malloc(size * sizeof(int));
+                int *ranks2 = (int *) malloc(size * sizeof(int));
+                MPI_Group worldGroup;
+                for (i = 0; i < commSize; i++)
+                {
+                	ranks1[i] = i;
+                }
+                PMPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
+                PMPI_Group_translate_ranks(group, commSize, ranks1, worldGroup, ranks2);
+                fprintf(fp, "Create\t");
+                for (i = 0; i < commSize - 1; i++)
+                {
+                	fprintf(fp, "%d\t", ranks2[i]);
+                }
+                fprintf(fp, "%d\n", ranks2[i]);
+                free(ranks1);
+                free(ranks2);
+	}
 	return result;
 }
 
