@@ -783,8 +783,7 @@ int main(int argc, char **argv)
 {
 	clock_t begin = clock();
 	int size, i, index, eventCode, post, start, send, dest;
-	char fileName[25];
-	char *buffer, *tmpBuffer, *tmpStr;
+	char fileName[25], *buffer, *tmpBuffer, *tmpStr;
 
 	char *pscw;
 	/* 
@@ -797,7 +796,7 @@ int main(int argc, char **argv)
 		N: NORMAL
 	*/
 
-	bool *barrier;
+	bool create, *barrier;
 	IntList *aIntListPost, *aIntListStart, *aIntListComplete, *aIntListWait, *aIntListBarrier;
 	EVC *EVCList;
 
@@ -811,6 +810,7 @@ int main(int argc, char **argv)
 	}
 	/**/
 
+	create = true;
 	post = -1;
 	start = -1;
 	send = -1;
@@ -874,7 +874,56 @@ int main(int argc, char **argv)
                                         free(tmpStr);
 
                                         tmpStr = getData(&tmpBuffer);
-                                        aList[index] = initList(tmpStr, size);
+
+                                       	if (tmpBuffer == NULL)  
+                                       	{
+						if (create == true)
+						{
+                                                	/* detect MCE across processes */
+
+                                                	/* DEBUGGING ZONE */
+                                                	fprintf(fp, "\nCREATE\n");
+                                                	printAllList(fp, aList, size);
+                                                	/**/
+
+                                                	int tmpMem = getMemory();
+                                                	memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
+                                                	detectMCEAcrossProc(aList, size);
+							freeAllList(aList, size);
+
+							create = false;
+						}
+
+                                                barrier[index] = true;
+                                                for (i = 0; i < size; i++)
+                                                {
+                                                        if (i != index && barrier[i] == false)
+                                                        {
+                                                                break;
+                                                        }
+                                                }
+
+                                                if (i == size)
+                                                {
+                                                        for (i = 0; i < size; i++)
+                                                        {
+                                                                mpz_set(EVCList[i].clock, EVCList[i].clockBase);
+                                                                barrier[i] = false;
+                                                        }
+                                                        aList[index] = initList(tmpStr, size);
+							create = true;
+                                                        index = 0;
+                                                }
+                                                else //if (i != size) 
+						{
+                                        		aList[index] = initList(tmpStr, size);
+							index = i;
+						}
+					}
+					else //if (tmpBuffer != NULL)
+					{
+                                        	aList[index] = initList(tmpStr, size);
+					}
 				}
 				else if (eventCode == FENCE)
 				{
