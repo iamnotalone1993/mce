@@ -113,7 +113,36 @@ int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatype origi
 int MPI_Win_fence(int assert, MPI_Win win)
 {
 	int result = PMPI_Win_fence(assert, win);
-	fprintf(fp, "Fence\n");
+	int size, globalSize;
+	MPI_Group group;
+	PMPI_Win_get_group(win, &group);
+	PMPI_Comm_size(MPI_COMM_WORLD, &globalSize);
+        PMPI_Group_size(group, &size);
+        if (size == globalSize)
+        {
+        	fprintf(fp, "Fence\n");
+        }
+        else //if (size != globalSize)
+        {
+        	int i;
+               	int *ranks1 = (int *) malloc(size * sizeof(int));
+               	int *ranks2 = (int *) malloc(size * sizeof(int));
+                MPI_Group worldGroup;
+                for (i = 0; i < size; i++)
+                {
+                        ranks1[i] = i;
+                }
+                PMPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
+                PMPI_Group_translate_ranks(group, size, ranks1, worldGroup, ranks2);
+                fprintf(fp, "Fence\t");
+                for (i = 0; i < size - 1; i++)
+                {
+                        fprintf(fp, "%d\t", ranks2[i]);
+                }
+                fprintf(fp, "%d\n", ranks2[i]);
+                free(ranks1);
+                free(ranks2);
+        }
 	return result;
 }
 
