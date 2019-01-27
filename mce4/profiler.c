@@ -71,7 +71,7 @@ int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_
                 }
                 PMPI_Comm_group(MPI_COMM_WORLD, &worldGroup);
                 PMPI_Group_translate_ranks(group, commSize, ranks1, worldGroup, ranks2);
-                fprintf(fp, "Create\t");
+                fprintf(fp, "Create\t%p\t", base);
                 for (i = 0; i < commSize - 1; i++)
                 {
                 	fprintf(fp, "%d\t", ranks2[i]);
