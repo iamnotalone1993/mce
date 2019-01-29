@@ -81,6 +81,7 @@ typedef struct Int {
 typedef struct IntList {
 	Int *head;
 	Int *tail;
+	int len;
 } IntList;
 
 int getEventCode(char *);
@@ -118,10 +119,10 @@ Int *initInt(int);
 void freeInt(Int *);
 
 IntList *initIntList();
-bool isIntListEmpty(IntList *);
 void insertIntList(IntList *, Int *);
 Int *removeIntList(IntList *);
 void removeAnIntList(IntList *, int);
+bool checkAnIntList(IntList *, int);
 
 void readEventWithinEpoch(FILE **, int, EVC *, int, List **, Chai *, int);
 void detectMCEInProc(Chai *);
