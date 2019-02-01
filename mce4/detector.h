@@ -9,7 +9,7 @@
 #include <time.h>
 #include <gmp.h>
 
-#define	BUFFER_SIZE		30
+#define	BUFFER_SIZE		512
 #define BASE			10
 
 #define DEFAULT			0

@@ -551,7 +551,7 @@ void readEventWithinEpoch(FILE **pFile, int index, EVC *EVCList, int size, List 
 {
 	while (true)
         {
-        	char *buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
+		char *buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
         	if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL)
                 {
                         count[index]++;
@@ -806,7 +806,7 @@ void detectMCEAcrossProc(List **aList, int size)
 int main(int argc, char **argv)
 {
 	clock_t begin = clock();
-	int size, i, index, eventCode, post, postCount, start, startCount, send, dest;
+	int size, i, index, eventCode, post, postCount, start, startCount, send, dest, initiator;
 	char fileName[25], *buffer, *tmpBuffer, *tmpStr;
 
 	char *pscw;
@@ -821,7 +821,7 @@ int main(int argc, char **argv)
 	*/
 
 	bool create, *barrier;
-	IntList *aIntListPost, *aIntListStart, *aIntListComplete, *aIntListWait, *aIntListCreate, *aIntListBarrier, *aIntListFence;
+	IntList *aIntListPost, *aIntListStart, **aIntListComplete, **aIntListWait, *aIntListCreate, *aIntListBarrier, *aIntListFence;
 	EVC *EVCList;
 	
 	/* DEBUGGING ZONE *//*
@@ -837,12 +837,15 @@ int main(int argc, char **argv)
 	start = -1;
 	send = -1;
 	dest = -1;
+	initiator = -1;
 	size = atoi(argv[1]);
 	pscw = (char *) malloc(size * sizeof(char));
 	barrier = (bool *) malloc(size * sizeof(bool));
 	FILE **pFile = (FILE **) malloc(size * sizeof(FILE *));
 	List **aList = (List **) malloc(size * sizeof(List *));
 	EVCList = (EVC *) malloc(size * sizeof(EVC));
+	aIntListComplete = (IntList **) malloc(size * sizeof(IntList *));
+	aIntListWait = (IntList **) malloc(size * sizeof(IntList *));
 	for (i = 0; i < size; i++)
 	{	
 		pscw[i] = 'N';
@@ -880,13 +883,17 @@ int main(int argc, char **argv)
 				/* DEBUGGING ZONE */
 				count[index]++;
 				//fprintf(fp, "[%d, %d]CP2: %s", index, count[index], buffer);
-				printf("[%d, %d]: %s", index, count[index], buffer);
-				//getchar();
+				printf("[%d, %d]: %spscw=%c post=%d start=%d\n\n", index, count[index], buffer, pscw[index], post, start);
+
+				/*if (count[0] > 5900 && count[0] % 100 == 0)
+				{
+					getchar();
+				}
 				/**/
 
 				eventCode = getEventCode(buffer);
 				if (eventCode == CREATE)
-				{	
+				{
                                         tmpBuffer = buffer;
                                         tmpStr = getData(&tmpBuffer);
                                         free(tmpStr);
@@ -1005,7 +1012,7 @@ int main(int argc, char **argv)
 							printf("\nSfence\n");
 							//printAllList(fp, aList, size);
 							/**/
-			
+							
 							int tmpMem = getMemory();
 							memUsage = (tmpMem > memUsage) ? tmpMem : memUsage;
 							detectMCEAcrossProc(aList, size);
@@ -1019,9 +1026,6 @@ int main(int argc, char **argv)
 								insertList(aList[i], aNode);
 								Chai *aChain = initChain(i);	
 		                                        	readEventWithinEpoch(pFile, i, EVCList, size, aList, aChain, FENCE);
-
-		                                        	/* detect MCE within an epoch */
-		                                        	//printChain(aChain);
 		                                        	detectMCEInProc(aChain);
 							}
 			
@@ -1087,11 +1091,16 @@ int main(int argc, char **argv)
 				}
 				else if (eventCode == POST)
 				{
+					if (initiator < 0)
+					{
+						initiator = index;
+					}
+
 		                	tmpBuffer = buffer;
 		                        tmpStr = getData(&tmpBuffer);
 		                        free(tmpStr);
 		                        aIntListPost = initIntList();
-					aIntListWait = initIntList();
+					aIntListWait[index] = initIntList();
 		                        while (tmpBuffer != NULL)
 		                        {
 		                                tmpStr = getData(&tmpBuffer);
@@ -1104,6 +1113,11 @@ int main(int argc, char **argv)
 				}
 				else if (eventCode == START)
 				{
+					if (initiator < 0)
+					{
+						initiator = index;
+					}
+
                                 	tmpBuffer = buffer;
                                 	tmpStr = getData(&tmpBuffer);
                                         free(tmpStr);
@@ -1117,7 +1131,7 @@ int main(int argc, char **argv)
 					else //if (tmpBuffer != NULL)
 					{
 						aIntListStart = initIntList();
-						aIntListComplete = initIntList();
+						aIntListComplete[index] = initIntList();
                                         	while (tmpBuffer != NULL)
                                         	{
                                         		tmpStr = getData(&tmpBuffer);
@@ -1142,7 +1156,7 @@ int main(int argc, char **argv)
 				}
 				else if (eventCode == BARRIER)
 				{
-					getchar();
+					//getchar();
 
 					tmpBuffer = buffer;
                                         tmpStr = getData(&tmpBuffer);
@@ -1319,57 +1333,38 @@ int main(int argc, char **argv)
 				if (start < 0)
 				{
                 			Int *aInt = removeIntList(aIntListPost);
-                			if (aInt != NULL)
-                			{
-                                		insertIntList(aIntListWait, aInt);
-						post = index;
-						if (aInt->num == index)
-						{
-							pscw[index] = 'N';
-						}
-						else //if (aInt->num != index)
-						{
-							index = aInt->num;
-						}
-                			}
-					else //if (aInt == NULL)
+                                	insertIntList(aIntListWait[index], aInt);
+					post = index;
+					if (aInt->num == index)
 					{
-						mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
-                				Node *aNode = initNode(EVCList[index].clock);
-                				insertList(aList[index], aNode);
-                				Chai *aChain = initChain(index);
-                				readEventWithinEpoch(pFile, index, EVCList, size, aList, aChain, WAIT);
-
-                				/* detect MCE within an epoch */
-						detectMCEInProc(aChain);
-
+						//mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
+						pscw[index] = 'N';
+					}
+					else //if (aInt->num != index)
+					{
 						pscw[index] = 'W';
-						post = -1;
+						index = aInt->num;
 					}
 				}
 				else //if (start >= 0)
 				{
 					removeAnIntList(aIntListPost, start);
-					if (aIntListPost->len > 0) {/* do nothing */} 
-					else //if (aIntListPost->len == 0)
-					{
-                                        	mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
-                                        	Node *aNode = initNode(EVCList[index].clock);
-                                        	insertList(aList[index], aNode);
-                                        	Chai *aChain = initChain(index);
-                                        	readEventWithinEpoch(pFile, index, EVCList, size, aList, aChain, WAIT);
+                                        insertIntList(aIntListWait[index], initInt(start));
+                                        mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
+                                        Node *aNode = initNode(EVCList[index].clock);
+                                        insertList(aList[index], aNode);
+                                        Chai *aChain = initChain(index);
+                                        readEventWithinEpoch(pFile, index, EVCList, size, aList, aChain, WAIT);
+                                        detectMCEInProc(aChain);
 
-                                        	/* detect MCE within an epoch */
-                                        	detectMCEInProc(aChain);
-
-                                        	pscw[index] = 'W';
-					}
+                                        pscw[index] = 'W';
+					post = index;
 					index = start;
 				}
 			}
 			else //if (postCount > 1)
 			{
-                                if (checkAnIntList(aIntListPost, index) == true)
+                                if (checkAnIntList(aIntListPost, index) == true)	//Handling package Post of skaMPI
                                 {
 					Int *tmpInt = removeIntList(aIntListPost);
 					while (tmpInt != NULL)
@@ -1389,14 +1384,12 @@ int main(int argc, char **argv)
                                                 insertList(aList[tmpInt->num], aNode1);
                                                 Chai *aChain1 = initChain(tmpInt->num);
                                                 readEventWithinEpoch(pFile, tmpInt->num, EVCList, size, aList, aChain1, COMPLETE);
-                                                /* detect MCE within an epoch */
                                                 detectMCEInProc(aChain1);
 
                                                 Node *aNode2 = initNode(EVCList[tmpInt->num].clock);
                                                 insertList(aList[tmpInt->num], aNode2);
                                                 Chai *aChain2 = initChain(tmpInt->num);
                                                 readEventWithinEpoch(pFile, tmpInt->num, EVCList, size, aList, aChain2, WAIT);
-                                                /* detect MCE within an epoch */
                                                 detectMCEInProc(aChain2);
 
 						tmpInt = removeIntList(aIntListPost);
@@ -1414,8 +1407,6 @@ int main(int argc, char **argv)
                                                 insertList(aList[index], aNode);
                                                 Chai *aChain = initChain(index);
                                                 readEventWithinEpoch(pFile, index, EVCList, size, aList, aChain, WAIT);
-
-                                                /* detect MCE within an epoch */
                                                 detectMCEInProc(aChain);
 
                                                 pscw[index] = 'W';
@@ -1447,65 +1438,53 @@ int main(int argc, char **argv)
 				if (post < 0)
 				{
 					Int *aInt = removeIntList(aIntListStart);
-					if (aInt == NULL)
-					{
-		                                mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
-		                                Node *aNode = initNode(EVCList[index].clock);
-		                                insertList(aList[index], aNode);
-		                                Chai *aChain = initChain(index);
-		                                readEventWithinEpoch(pFile, index, EVCList, size, aList, aChain, COMPLETE);
+					insertIntList(aIntListComplete[index], aInt);
 
-		                                /* detect MCE within an epoch */
-		                                detectMCEInProc(aChain);
+					mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[aInt->num].clock);
+					mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
+		                        Node *aNode = initNode(EVCList[index].clock);
+		                        insertList(aList[index], aNode);
+		                        Chai *aChain = initChain(index);
+		                        readEventWithinEpoch(pFile, index, EVCList, size, aList, aChain, COMPLETE);
 
-		                                pscw[index] = 'C';
-						start = -1;
-					}
-					else //if (aInt != NULL)
-					{
-		                                insertIntList(aIntListComplete, aInt);
-		                        	mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[aInt->num].clock);
+		                        /* detect MCE within an epoch */
+		                        detectMCEInProc(aChain);
 
-						start = index;
-						index = aInt->num;
-					}
+		                        pscw[index] = 'C';
+					start = index;
+					index = aInt->num;
 				}
 				else //if (post >= 0)
 				{
-					mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[post].clock);
+					//mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[post].clock);
 					removeAnIntList(aIntListStart, post);
-					if (aIntListStart->len == 0)
+					insertIntList(aIntListComplete[index], initInt(post));
+				
+		                	//mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
+		                	Node *aNode = initNode(EVCList[index].clock);
+		                	insertList(aList[index], aNode);
+		                	Chai *aChain = initChain(index);
+		                	readEventWithinEpoch(pFile, index, EVCList, size, aList, aChain, COMPLETE);
+		                	detectMCEInProc(aChain);
+
+					pscw[index] = 'C';
+					post = -1;
+					if (post == index)
 					{
-		                		mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
-		                		Node *aNode = initNode(EVCList[index].clock);
-		                		insertList(aList[index], aNode);
-		                		Chai *aChain = initChain(index);
-		                		readEventWithinEpoch(pFile, index, EVCList, size, aList, aChain, COMPLETE);
-
-		                		/* detect MCE within an epoch */
-		                		detectMCEInProc(aChain);
-
-						pscw[index] = 'C';
-						index = post;
+						//TO DO
 					}
-					else //if (aIntListStart->len > 0)
+					else //if (post != index)
 					{
-						pscw[index] = 'S';
-						start = -1;
-						index = post;
+						//start = index;
+						//index = post;
 					}
 				}
 			}
 			else //if (startCount > 1)
 			{
-				if (checkAnIntList(aIntListStart, index) == true) 
+				if (post < 0)
 				{
 					Int *aInt = removeIntList(aIntListStart);
-					if (aInt->num == index)
-					{
-						free(aInt);
-						aInt = removeIntList(aIntListStart);
-					}
 					if (aInt == NULL)
 					{
                                                 mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
@@ -1522,15 +1501,22 @@ int main(int argc, char **argv)
 					}
 					else //if (aInt != NULL)
 					{
-						post = -1;
-						start = index;
-						index = aInt->num;
-						free(aInt);
+                                               	insertIntList(aIntListComplete[index], aInt);
+						if (aInt->num == index) 
+						{
+							printf("This case does not never exist\n");
+						}
+						else //if (aInt->num != index)
+						{
+                                                	mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[aInt->num].clock);
+							start = index;
+							index = aInt->num;
+						}
 					}
 				}
-				else //if (checkAnIntList(aIntListStart, index) == false)
+				else //if (post >= 0)
 				{
-                                        Int *aInt = removeIntList(aIntListStart);
+					Int *aInt = removeIntList(aIntListStart);
 					if (aInt == NULL)
 					{
                                                 mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
@@ -1538,18 +1524,25 @@ int main(int argc, char **argv)
                                                 insertList(aList[index], aNode);
                                                 Chai *aChain = initChain(index);
                                                 readEventWithinEpoch(pFile, index, EVCList, size, aList, aChain, COMPLETE);
-
-                                                /* detect MCE within an epoch */
                                                 detectMCEInProc(aChain);
 
                                                 pscw[index] = 'C';
+						post = -1;
                                                 start = -1;
 					}
 					else //if (aInt != NULL)
 					{
-						start = index;
-						index = aInt->num;
-						free(aInt);
+                                                insertIntList(aIntListComplete[index], aInt);
+                                        	if (aInt->num == index) 
+						{
+							post = -1;
+						}
+						else //if (aInt->num != index)
+						{
+							post = -1;
+							start = index;
+							index = aInt->num;
+						}
 					}
 				}
 			}
@@ -1558,89 +1551,122 @@ int main(int argc, char **argv)
 		{
                         /* DEBUGGING ZONE */
                         printf("COMPLETE: index=%d pscw=%c post=%d start=%d\n", index, pscw[index], post, start);
+			//getchar();
                         /**/
 
-			if (post < 0)
+			if (startCount == 0)
 			{
-				Int *aInt = removeIntList(aIntListComplete);
+				printf("Program Error\n");
+			}
+			else if (startCount == 1)
+			{
+				Int *aInt = removeIntList(aIntListComplete[index]);
+				if (aInt->num == index)
+				{
+                                        fgets(buffer, BUFFER_SIZE, pFile[index]);
+                                        count[index]++;
+                                        printf("[%d, %d]: %s", index, count[index], buffer);
+                                        removeAnIntList(aIntListWait[index], index);
+					post = -1;
+					start = -1;
+					initiator = -1;
+					pscw[index] = 'N';
+				}
+				else //if (aInt->num != index)
+				{
+                                	mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
+                                	Node *aNode = initNode(EVCList[index].clock);
+                                	insertList(aList[index], aNode);
+
+					pscw[index] = 'N';
+					index = aInt->num;
+				}
+				freeInt(aInt);
+			}
+			else //if (startCount > 1)
+			{
+				Int *aInt = removeIntList(aIntListComplete[index]);
 				if (aInt != NULL)
 				{	
-					start = index;
-					index = aInt->num;
+					if (aInt->num == index)
+					{
+                                		fgets(buffer, BUFFER_SIZE, pFile[index]);
+                                        	count[index]++;
+                                        	printf("[%d, %d]: %s", index, count[index], buffer);
+                                        	removeAnIntList(aIntListWait[index], index);
+					}
+					else //if (aInt->num != index)
+					{
+						index = aInt->num;
+					}
 					freeInt(aInt);
 				}
 				else //if (aInt == NULL)
 				{
-                                        mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
-                                        Node *aNode = initNode(EVCList[index].clock);
-                                        insertList(aList[index], aNode);
-
-					pscw[index] = 'N';
-					start = -1;	
-				}
-			}
-			else //if (post >= 0)
-			{
-				removeAnIntList(aIntListComplete, post);
-				if (aIntListComplete->len == 0)
-				{
                                 	mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
-                                        Node *aNode = initNode(EVCList[index].clock);
-                                        insertList(aList[index], aNode);
-					
-					if (post == index)
-					{
-						pscw[index] = 'P';
-					}
-					else //if (post != index)
-					{
-						pscw[index] = 'N';
-					}
+                                	Node *aNode = initNode(EVCList[index].clock);
+                                	insertList(aList[index], aNode);
+
+					post = -1;
+					start = -1;
+					pscw[index] = 'N';
+					index = initiator;
+					initiator = -1;
 				}
-				else {/* do nothing */}
-				index = post;
 			}
 		}
 		else if (pscw[index] == 'W')
 		{
                         /* DEBUGGING ZONE */
                         printf("WAIT: index=%d pscw=%c post=%d start=%d\n", index, pscw[index], post, start);
+			//getchar();
                         /**/
-
-			if (start < 0)
+			
+			if (postCount == 0)
 			{
-                                Int *aInt = removeIntList(aIntListWait);
-                                if (aInt == NULL)
-                                {
-                                        mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
-                                        Node *aNode = initNode(EVCList[index].clock);
-                                        insertList(aList[index], aNode);
+				printf("Program Error\n");
+			}
+			else if (postCount == 1)
+			{
+				Int *aInt = removeIntList(aIntListWait[index]);
+                                mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
+                                Node *aNode = initNode(EVCList[index].clock);
+                                insertList(aList[index], aNode);
 
-					pscw[index] = 'N';	
-					post = -1;	
+				pscw[index] = 'N';
+				if (startCount == 1)
+				{
+					post = -1;
+					start = -1;
+					index = initiator;
+				}
+				else if (startCount > 1)
+				{
+					index = aInt->num;
+				}
+				freeInt(aInt);
+			}
+			else //if (postCount > 1)
+			{
+				Int *aInt = removeIntList(aIntListWait[index]);
+				if (aInt == NULL)
+				{
+                                	mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
+                                	Node *aNode = initNode(EVCList[index].clock);
+                                	insertList(aList[index], aNode);
+
+					post = -1;
+					start = -1;
+					pscw[index] = 'N';
+					index = initiator;
+					initiator = -1;
 				}
 				else //if (aInt != NULL)
 				{
                                 	mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[aInt->num].clock);
-                                 
-					post = index;
 					index = aInt->num;
 					freeInt(aInt);
 				}
-			}
-			else //if (start >= 0)
-			{
-				removeAnIntList(aIntListWait, start);
-				mpz_lcm(EVCList[index].clock, EVCList[index].clock, EVCList[start].clock);
-				if (aIntListWait->len == 0)		
-				{
-                                        mpz_mul(EVCList[index].clock, EVCList[index].clock, EVCList[index].clockBase);
-                                        Node *aNode = initNode(EVCList[index].clock);
-                                        insertList(aList[index], aNode);
-					
-					pscw[index] = 'N';
-				}
-				index = start;
 			}
 		}
 		else if (pscw[index] == 'A')
@@ -1674,6 +1700,8 @@ int main(int argc, char **argv)
 	}
 	free(pFile);
 	free(EVCList);
+	free(aIntListComplete);
+	free(aIntListWait);
 	free(pscw);
 	free(barrier);
 
