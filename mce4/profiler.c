@@ -59,11 +59,11 @@ int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_
         {
         	fprintf(fp, "Create\t%p\n", base);
         }
-        else //if (commSize != globalSize)
+        else //if (size != globalSize)
         {
         	int i;
-                int *ranks1 = (int *) malloc(commSize * sizeof(int));
-                int *ranks2 = (int *) malloc(commSize * sizeof(int));
+                int *ranks1 = (int *) malloc(size * sizeof(int));
+                int *ranks2 = (int *) malloc(size * sizeof(int));
                 MPI_Group worldGroup;
                 for (i = 0; i < commSize; i++)
                 {
