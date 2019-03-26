@@ -1,2 +1,4 @@
 dec
 *.o
+.cproject
+.project
