@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <time.h>
 
+#include "processList.h"
+
 #define BUFFER_SIZE             512
 #define BASE                    10
 
@@ -28,24 +30,6 @@
 #define LOAD                    14
 #define STORE                   15
 #define CREATE                  16
-
-typedef struct Int {
-	int num;
-	struct Int *next;
-} Int;
-
-Int *initInt(Int *, int);
-void freeInt(Int *);
-
-typedef struct List {
-	Int *head;
-	Int *tail;
-} List;
-
-List *initList(List *);
-void insertInt2List(List *, Int *);
-Int *getIntfromList(List *);
-void freeList(List *);
 
 typedef struct Event {
 	int code;
@@ -68,8 +52,5 @@ void push(Queue *, Event *);
 Event *retrieve(Queue *, int);
 bool isEmpty(Queue *);
 void freeQueue(Queue *);
-
-int getEventCode(char *);
-char *getData(char **);
 
 #endif
