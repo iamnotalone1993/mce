@@ -12,22 +12,22 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-typedef struct Int {
+typedef struct Process {
 	int num;
-	struct Int *next;
-} Int;
+	struct Process *next;
+} Process;
 
-Int *initInt(Int *, int);
-void freeInt(Int *);
+Process *initProcess(Process *, int);
+void freeProcess(Process *);
 
-typedef struct List {
-	Int *head;
-	Int *tail;
-} List;
+typedef struct ProcessList {
+	Process *head;
+	Process *tail;
+} ProcessList;
 
-List *initList(List *);
-void insertInt2List(List *, Int *);
-Int *getIntfromList(List *);
-void freeList(List *);
+ProcessList *initProcessList(ProcessList *);
+void insertProcess2ProcessList(ProcessList *, Process *);
+Process *getProcessfromProcessList(ProcessList *);
+void freeProcessList(ProcessList *);
 
 #endif /* PROCESSLIST_H_ */

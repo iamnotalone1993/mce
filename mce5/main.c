@@ -51,9 +51,9 @@ int main(int argc, char ** argv) {
 						while (tmpBuffer != NULL) {
 							printf("CP112\n");
 							tmpStr = getData( & tmpBuffer);
-							Int * anInt = initInt(anInt, atoi(tmpStr));
+							Process * aProcess = initProcess(aProcess, atoi(tmpStr));
 							free(tmpStr);
-							insertInt2List(anEvent -> intList, anInt);
+							insertProcess2ProcessList(anEvent -> processList, aProcess);
 						}
 
 						enqueue(queueArr[index], anEvent);
@@ -74,18 +74,18 @@ int main(int argc, char ** argv) {
 				printf("CP2\n");
 				Event * anEvent = dequeue(queueArr[index]);
 				if (anEvent -> code == POST) {
-					Int * anInt = getIntfromList(anEvent -> intList);
-					if (anInt == NULL) { /* do nothing */ } else //if (anInt != NULL)
+					Process * aProcess = getProcessfromProcessList(anEvent -> processList);
+					if (aProcess == NULL) { /* do nothing */ } else //if (aProcess != NULL)
 					{
-						if (anEvent -> intList -> head == NULL) {
+						if (anEvent -> processList -> head == NULL) {
 							freeEvent(anEvent);
-						} else //if (anEvent->intList->head != NULL)
+						} else //if (anEvent->processList->head != NULL)
 						{
 							push(queueArr[index], anEvent);
 						}
 
 						currentEvent = initEvent(currentEvent, POST);
-						insertInt2List(currentEvent -> intList, anInt);
+						insertProcess2ProcessList(currentEvent -> processList, aProcess);
 					}
 				} else if (anEvent -> code == START) {
 					//TODO

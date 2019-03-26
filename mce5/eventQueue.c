@@ -3,13 +3,13 @@
 Event * initEvent(Event * anEvent, int eventCode) {
 	anEvent = (Event * ) malloc(sizeof(Event));
 	anEvent -> code = eventCode;
-	anEvent -> intList = initList(anEvent -> intList);
+	anEvent -> processList = initProcessList(anEvent -> processList);
 	anEvent -> next = NULL;
 	return anEvent;
 }
 
 void freeEvent(Event * anEvent) {
-	free(anEvent -> intList);
+	free(anEvent -> processList);
 	free(anEvent);
 }
 

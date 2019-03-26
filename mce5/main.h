@@ -9,6 +9,7 @@
 #define MAIN_H_
 
 #include "eventQueue.h"
+#include "processList.h"
 
 int getEventCode(char *);
 char *getData(char **);

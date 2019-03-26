@@ -33,7 +33,7 @@
 
 typedef struct Event {
 	int code;
-	List *intList;
+	ProcessList *processList;
 	struct Event *next;
 } Event;
 

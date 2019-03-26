@@ -1,54 +1,54 @@
 /*
- * processList.c
+ * processProcessList.c
  *
  *  Created on: Mar 26, 2019
  *      Author: kimloai
  */
 #include "processList.h"
-Int * initInt(Int * anInt, int num) {
-	anInt = (Int * ) malloc(sizeof(Int));
-	anInt -> num = num;
-	anInt -> next = NULL;
-	return anInt;
+Process * initProcess(Process * aProcess, int num) {
+	aProcess = (Process * ) malloc(sizeof(Process));
+	aProcess -> num = num;
+	aProcess -> next = NULL;
+	return aProcess;
 }
 
-void freeInt(Int * anInt) {
-	free(anInt);
+void freeProcess(Process * aProcess) {
+	free(aProcess);
 }
 
-List * initList(List * aList) {
-	aList = (List * ) malloc(sizeof(List));
-	aList -> head = NULL;
-	aList -> tail = NULL;
+ProcessList * initProcessList(ProcessList * aProcessList) {
+	aProcessList = (ProcessList * ) malloc(sizeof(ProcessList));
+	aProcessList -> head = NULL;
+	aProcessList -> tail = NULL;
 }
 
-void insertInt2List(List * aList, Int * anInt) {
-	if (aList -> head == NULL) {
-		aList -> head = anInt;
-	} else //if (aList->head != NULL)
+void insertProcess2ProcessList(ProcessList * aProcessList, Process * aProcess) {
+	if (aProcessList -> head == NULL) {
+		aProcessList -> head = aProcess;
+	} else //if (aProcessList->head != NULL)
 	{
-		aList -> tail -> next = anInt;
+		aProcessList -> tail -> next = aProcess;
 	}
-	aList -> tail = anInt;
+	aProcessList -> tail = aProcess;
 }
 
-Int * getIntfromList(List * aList) {
-	if (aList -> head == NULL) {
+Process * getProcessfromProcessList(ProcessList * aProcessList) {
+	if (aProcessList -> head == NULL) {
 		return NULL;
-	} else //if (aList->head != NULL)
+	} else //if (aProcessList->head != NULL)
 	{
-		Int * tmpInt = aList -> head;
-		aList -> head = aList -> head -> next;
-		if (aList -> head == aList -> tail) {
-			aList -> tail = NULL;
-		} else //if (aList->head != aList->tail)
+		Process * tmpProcess = aProcessList -> head;
+		aProcessList -> head = aProcessList -> head -> next;
+		if (aProcessList -> head == aProcessList -> tail) {
+			aProcessList -> tail = NULL;
+		} else //if (aProcessList->head != aProcessList->tail)
 		{
-			tmpInt -> next = NULL;
+			tmpProcess -> next = NULL;
 		}
-		return tmpInt;
+		return tmpProcess;
 	}
 }
 
-void freeList(List * aList) {
-	free(aList);
+void freeProcessList(ProcessList * aProcessList) {
+	free(aProcessList);
 }
