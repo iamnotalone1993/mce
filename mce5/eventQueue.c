@@ -1,9 +1,9 @@
 #include "eventQueue.h"
 
-Event * initEvent(Event * anEvent, int eventCode) {
-	anEvent = (Event * ) malloc(sizeof(Event));
+Event * initEvent(int eventCode) {
+	Event *anEvent = (Event * ) malloc(sizeof(Event));
 	anEvent -> code = eventCode;
-	anEvent -> processList = initProcessList(anEvent -> processList);
+	anEvent -> processList = initProcessList();
 	anEvent -> next = NULL;
 	return anEvent;
 }

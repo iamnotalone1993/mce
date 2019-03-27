@@ -37,7 +37,7 @@ typedef struct Event {
 	struct Event *next;
 } Event;
 
-Event *initEvent(Event *, int);
+Event *initEvent(int);
 void freeEvent(Event *);
 
 typedef struct Queue {

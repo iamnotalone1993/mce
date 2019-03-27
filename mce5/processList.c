@@ -5,8 +5,8 @@
  *      Author: kimloai
  */
 #include "processList.h"
-Process * initProcess(Process * aProcess, int num) {
-	aProcess = (Process * ) malloc(sizeof(Process));
+Process * initProcess(int num) {
+	Process *aProcess = (Process * ) malloc(sizeof(Process));
 	aProcess -> num = num;
 	aProcess -> next = NULL;
 	return aProcess;
@@ -16,10 +16,11 @@ void freeProcess(Process * aProcess) {
 	free(aProcess);
 }
 
-ProcessList * initProcessList(ProcessList * aProcessList) {
-	aProcessList = (ProcessList * ) malloc(sizeof(ProcessList));
+ProcessList * initProcessList() {
+	ProcessList *aProcessList = (ProcessList * ) malloc(sizeof(ProcessList));
 	aProcessList -> head = NULL;
 	aProcessList -> tail = NULL;
+	return aProcessList;
 }
 
 void insertProcess2ProcessList(ProcessList * aProcessList, Process * aProcess) {

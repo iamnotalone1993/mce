@@ -17,7 +17,7 @@ typedef struct Process {
 	struct Process *next;
 } Process;
 
-Process *initProcess(Process *, int);
+Process *initProcess(int);
 void freeProcess(Process *);
 
 typedef struct ProcessList {
@@ -25,7 +25,7 @@ typedef struct ProcessList {
 	Process *tail;
 } ProcessList;
 
-ProcessList *initProcessList(ProcessList *);
+ProcessList *initProcessList();
 void insertProcess2ProcessList(ProcessList *, Process *);
 Process *getProcessfromProcessList(ProcessList *);
 void freeProcessList(ProcessList *);

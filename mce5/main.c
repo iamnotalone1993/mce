@@ -32,38 +32,19 @@ int main(int argc, char ** argv) {
 
 	while (index < size) {
 		printf("HERE\n");
-		getchar();
+		//getchar();
 		if (currentEvent == NULL) {
 			if (isEmpty(queueArr[index]) == true) {
 				printf("CP1\n");
+				/*  Get an event from file and add event to the queue  */
+				/*  If there is no event in the file (EOF) change to the next file  */
+
 				buffer = (char * ) malloc(BUFFER_SIZE * sizeof(char));
 				if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL) {
 					printf("CP11\n");
-					eventCode = getEventCode(buffer);
-					if (eventCode == POST) {
-						printf("CP111\n");
-						Event * anEvent = initEvent(anEvent, eventCode);
 
-						tmpBuffer = buffer;
-						tmpStr = getData( & tmpBuffer);
-						free(tmpStr);
+					addEvent2Queue(&buffer, &queueArr[index]);
 
-						while (tmpBuffer != NULL) {
-							printf("CP112\n");
-							tmpStr = getData( & tmpBuffer);
-							Process * aProcess = initProcess(aProcess, atoi(tmpStr));
-							free(tmpStr);
-							insertProcess2ProcessList(anEvent -> processList, aProcess);
-						}
-
-						enqueue(queueArr[index], anEvent);
-					} else if (eventCode == START) {
-						//TODO
-					} else if (eventCode == COMPLETE) {
-						//TODO
-					} else if (eventCode == WAIT) {
-						//TODO
-					} else { /* TODO */ }
 				} else //if (fgets(buffer, BUFFER_SIZE, pFile[index]) == NULL)
 				{
 					++index;
@@ -84,7 +65,7 @@ int main(int argc, char ** argv) {
 							push(queueArr[index], anEvent);
 						}
 
-						currentEvent = initEvent(currentEvent, POST);
+						currentEvent = initEvent(POST);
 						insertProcess2ProcessList(currentEvent -> processList, aProcess);
 					}
 				} else if (anEvent -> code == START) {
@@ -163,19 +144,19 @@ int getEventCode(char * str) {
 	}
 }
 
-char * getData(char ** buffer) {
-	char * tmpBuffer, * tmpStr = NULL;
-	int tmpInt;
-
-	tmpBuffer = * buffer;
-	* buffer = strchr( * buffer, '\t');
-	if ( * buffer != NULL) {
-		( * buffer) ++;
+void addEvent2Queue(char **anEventLine, Queue **aQueue){
+	int eventCode = getEventCode(*anEventLine);
+	Event * anEvent = initEvent(eventCode);
+	// TODO: Post Start are different from Complete Wait -> switch case
+	char *pch = strtok(*anEventLine, "\t\n");//get event code
+	//printf("%s\n", pch);// output Post
+	while (pch = strtok(NULL, "\t\n")){
+		int aProcessNumber = atoi(pch);
+		//printf("%d\n", a); //out put 0 1 2 3
+		Process * aProcess = initProcess(aProcessNumber);
+		insertProcess2ProcessList(anEvent -> processList, aProcess);
 	}
-	tmpInt = strcspn(tmpBuffer, "\t\n");
-	tmpStr = (char * ) malloc((tmpInt + 1) * sizeof(char));
-	memcpy(tmpStr, tmpBuffer, tmpInt);
-	tmpStr[tmpInt] = '\0';
 
-	return tmpStr;
+	enqueue(*aQueue, anEvent);
+	return;
 }

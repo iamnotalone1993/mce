@@ -13,5 +13,6 @@
 
 int getEventCode(char *);
 char *getData(char **);
+void addEvent2Queue(char **, Queue**);
 
 #endif /* MAIN_H_ */
