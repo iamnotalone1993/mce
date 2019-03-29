@@ -33,14 +33,12 @@ void enqueue(Queue * aQueue, Event * anEvent) {
 Event * dequeue(Queue * aQueue) {
 	if (aQueue -> front == NULL) {
 		return NULL;
-	} else //if (aQueue->front != NULL)
-	{
+	} else {//if (aQueue->front != NULL)
 		Event * anEvent = aQueue -> front;
 		aQueue -> front = aQueue -> front -> next;
 		if (aQueue -> front == aQueue -> rear) {
 			aQueue -> rear = NULL;
-		} else //if (aQueue->front != aQueue->rear)
-		{
+		} else {//if (aQueue->front != aQueue->rear)
 			anEvent -> next = NULL;
 		}
 		return anEvent;
