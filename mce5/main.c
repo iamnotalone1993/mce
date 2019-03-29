@@ -7,17 +7,17 @@
 
 #include "main.h"
 
+FILE ** pFile;
+Queue ** queueArr;
+
 int main(int argc, char ** argv) {
 	int size, index, eventCode, i;
 	char fileName[25], * buffer, * tmpBuffer, * tmpStr;
-	FILE ** pFile;
-	Event * currentEvent;
-	Queue ** queueArr;
 
 	size = atoi(argv[1]);
 	index = 0;
 	pFile = (FILE ** ) malloc(size * sizeof(FILE * ));
-	currentEvent = NULL;
+
 	queueArr = (Queue ** ) malloc(size * sizeof(Queue * ));
 
 	for (i = 0; i < size; ++i) {
@@ -33,52 +33,26 @@ int main(int argc, char ** argv) {
 	while (index < size) {
 		printf("HERE\n");
 		//getchar();
-		if (currentEvent == NULL) {
-			if (isEmpty(queueArr[index]) == true) {
-				printf("CP1\n");
-				/*  Get an event from file and add event to the queue  */
-				/*  If there is no event in the file (EOF) change to the next file  */
+		if (isEmpty(queueArr[index]) == true) {
+			printf("CP1\n");
+			/*  Get an event from file and add event to the queue  */
+			/*  If there is no event in the file (EOF) change to the next file  */
 
-				buffer = (char * ) malloc(BUFFER_SIZE * sizeof(char));
-				if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL) {
-					printf("CP11\n");
+			buffer = (char * ) malloc(BUFFER_SIZE * sizeof(char));
+			if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL) {
+				printf("CP11\n");
 
-					addEvent2Queue(&buffer, &queueArr[index]);
+				addEvent2Queue(buffer, queueArr[index]);
 
-				} else //if (fgets(buffer, BUFFER_SIZE, pFile[index]) == NULL)
-				{
-					++index;
-				}
-				free(buffer);
-			} else //if (isEmpty(queueArr[index]) == false)
-			{
-				printf("CP2\n");
-				Event * anEvent = dequeue(queueArr[index]);
-				if (anEvent -> code == POST) {
-					Process * aProcess = getProcessfromProcessList(anEvent -> processList);
-					if (aProcess == NULL) { /* do nothing */ } else //if (aProcess != NULL)
-					{
-						if (anEvent -> processList -> head == NULL) {
-							freeEvent(anEvent);
-						} else //if (anEvent->processList->head != NULL)
-						{
-							push(queueArr[index], anEvent);
-						}
-
-						currentEvent = initEvent(POST);
-						insertProcess2ProcessList(currentEvent -> processList, aProcess);
-					}
-				} else if (anEvent -> code == START) {
-					//TODO
-				} else if (anEvent -> code == COMPLETE) {
-					//TODO
-				} else if (anEvent -> code == WAIT) {
-					//TODO
-				} else { /* TODO */ }
+			} else { //if (fgets(buffer, BUFFER_SIZE, pFile[index]) == NULL)
+				++index;
 			}
-		} else //if (currentEvent != NULL)
-		{
-			//TODO
+			free(buffer);
+		} else { //if (isEmpty(queueArr[index]) == false)
+			printf("CP2\n");
+			/*Dequeue the event in the queue and process it*/
+			Event * anEvent = dequeue(queueArr[index]);
+			int returnCode = processTheEvent(anEvent, index);
 		}
 	}
 
@@ -144,19 +118,65 @@ int getEventCode(char * str) {
 	}
 }
 
-void addEvent2Queue(char **anEventLine, Queue **aQueue){
-	int eventCode = getEventCode(*anEventLine);
-	Event * anEvent = initEvent(eventCode);
+Event * addEvent2Queue(char * anEventLine, Queue * aQueue){
+	int eventCode = getEventCode(anEventLine);
+	Event * _event = initEvent(eventCode);
 	// TODO: Post Start are different from Complete Wait -> switch case
-	char *pch = strtok(*anEventLine, "\t\n");//get event code
+	char *pch = strtok(anEventLine, "\t\n");//get event code
 	//printf("%s\n", pch);// output Post
-	while (pch = strtok(NULL, "\t\n")){
+	while ((pch = strtok(NULL, "\t\n")) != NULL){
 		int aProcessNumber = atoi(pch);
 		//printf("%d\n", a); //out put 0 1 2 3
 		Process * aProcess = initProcess(aProcessNumber);
-		insertProcess2ProcessList(anEvent -> processList, aProcess);
+		insertProcess2ProcessList(_event -> processList, aProcess);
 	}
 
-	enqueue(*aQueue, anEvent);
-	return;
+	enqueue(aQueue, _event);
+	return _event;
+}
+
+int processTheEvent(Event * anEvent, int aCurrentProcess){
+	switch (anEvent->code){
+	case POST:{
+		/*Case POST: execute the process list, readfile to find WAIT*/
+		char * _buffer = (char *) malloc(1 * sizeof(char));
+
+		while (!isProcessListEmpty(anEvent -> processList)){
+			Process *_startProcess = getProcessfromProcessList(anEvent->processList);
+			/*Find corresponding START from corresponding Queue*/
+			Event * _event = findSTARTfromQueue(queueArr[_startProcess -> num], aCurrentProcess);
+			if (_event == NULL){
+				do{
+					assert(fgets(_buffer, BUFFER_SIZE, pFile[_startProcess -> num]));
+					_event = addEvent2Queue(_buffer, queueArr[_startProcess -> num]);
+				} while(_event -> code != START);
+			}
+			assert(_event != NULL);
+
+			/*Remove the corresponding START process from the START's process list*/
+			int _returnCode = removeAprocessFromProcessList(_event -> processList, aCurrentProcess);
+			assert (_returnCode != -1);
+		}
+
+		/*Read file to find WAIT*/
+		do{
+			assert(fgets(_buffer, BUFFER_SIZE, pFile[aCurrentProcess]));
+		} while(addEvent2Queue(_buffer, queueArr[aCurrentProcess]) -> code != WAIT);
+
+		//TODO: Add POST to epoch to detect MCE
+
+		free(_buffer);
+		break;
+	}
+	case START:{
+		/*Wait for post to call all start in the START's process list*/
+
+		break;
+	}
+	default:
+
+		break;
+	}
+
+	return 0;
 }

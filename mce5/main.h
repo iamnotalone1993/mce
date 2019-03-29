@@ -8,11 +8,14 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
+#include <assert.h>
+
 #include "eventQueue.h"
 #include "processList.h"
 
 int getEventCode(char *);
 char *getData(char **);
-void addEvent2Queue(char **, Queue**);
+Event * addEvent2Queue(char *, Queue*);
+int processTheEvent(Event *, int);
 
 #endif /* MAIN_H_ */
