@@ -29,5 +29,6 @@ ProcessList *initProcessList();
 void insertProcess2ProcessList(ProcessList *, Process *);
 Process *getProcessfromProcessList(ProcessList *);
 void freeProcessList(ProcessList *);
+inline bool isProcessListEmpty(ProcessList *);
 
 #endif /* PROCESSLIST_H_ */

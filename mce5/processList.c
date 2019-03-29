@@ -53,3 +53,8 @@ Process * getProcessfromProcessList(ProcessList * aProcessList) {
 void freeProcessList(ProcessList * aProcessList) {
 	free(aProcessList);
 }
+
+inline bool isProcessListEmpty(ProcessList *aProcessList){
+	if (aProcessList->head == aProcessList->tail) return true;
+	else return false;
+}
