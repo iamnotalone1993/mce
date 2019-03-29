@@ -50,11 +50,41 @@ Process * getProcessfromProcessList(ProcessList * aProcessList) {
 	}
 }
 
+int removeAprocessFromProcessList(ProcessList *aProcessList, int aProcess){
+	if (aProcessList -> head == NULL) {
+		return -1;
+	} else {//if (aProcessList->head != NULL)
+		Process * _pProcess = aProcessList -> head;
+		Process * _pPreviousProcess = aProcessList -> head;
+
+		//the process is in the start of list
+		if (aProcessList -> head -> num == aProcess){
+			aProcessList -> head = aProcessList -> head -> next;
+			free(_pProcess);
+			return 0;
+		}
+
+		//the process is not in the start of list
+		while (_pProcess == NULL){
+			if(_pProcess -> num == aProcess){
+				_pPreviousProcess -> next = _pProcess -> next;
+				if (_pProcess -> next == NULL) aProcessList -> tail = _pPreviousProcess;
+				free(_pProcess);
+				return 0;
+			}
+
+			_pPreviousProcess = _pProcess;
+			_pProcess = _pProcess -> next;
+		}
+	}
+	return -1;
+}
+
 void freeProcessList(ProcessList * aProcessList) {
 	free(aProcessList);
 }
 
-inline bool isProcessListEmpty(ProcessList *aProcessList){
+bool isProcessListEmpty(ProcessList *aProcessList){
 	if (aProcessList->head == aProcessList->tail) return true;
 	else return false;
 }

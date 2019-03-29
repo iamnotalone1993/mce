@@ -28,7 +28,8 @@ typedef struct ProcessList {
 ProcessList *initProcessList();
 void insertProcess2ProcessList(ProcessList *, Process *);
 Process *getProcessfromProcessList(ProcessList *);
+int removeAprocessFromProcessList(ProcessList *, int);
 void freeProcessList(ProcessList *);
-inline bool isProcessListEmpty(ProcessList *);
+bool isProcessListEmpty(ProcessList *);
 
 #endif /* PROCESSLIST_H_ */
