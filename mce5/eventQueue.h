@@ -37,7 +37,7 @@ typedef struct Event {
 	struct Event *next;
 } Event;
 
-Event *initEvent(int);
+Event * initEvent(int);
 void freeEvent(Event *);
 
 typedef struct Queue {
@@ -45,11 +45,11 @@ typedef struct Queue {
 	Event *rear;
 } Queue;
 
-Queue *initQueue(Queue *);
+Queue * initQueue(Queue *);
 void enqueue(Queue *, Event *);
-Event *dequeue(Queue *);
+Event * dequeue(Queue *);
 void push(Queue *, Event *);
-Event *retrieve(Queue *, int);
+Event * findSTARTfromQueue(Queue *, int);
 bool isEmpty(Queue *);
 void freeQueue(Queue *);
 
