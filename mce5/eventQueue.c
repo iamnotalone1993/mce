@@ -35,11 +35,10 @@ Event * dequeue(Queue * aQueue) {
 		return NULL;
 	} else {//if (aQueue->front != NULL)
 		Event * anEvent = aQueue -> front;
-		aQueue -> front = aQueue -> front -> next;
 		if (aQueue -> front == aQueue -> rear) {
-			aQueue -> rear = NULL;
+			aQueue -> front = aQueue -> rear = NULL;
 		} else {//if (aQueue->front != aQueue->rear)
-			anEvent -> next = NULL;
+			aQueue -> front = aQueue -> front -> next;
 		}
 		return anEvent;
 	}
