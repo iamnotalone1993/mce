@@ -29,7 +29,7 @@ Queue * initQueue();
 void enqueue(Queue *, Event *);
 Event * dequeue(Queue *);
 void push(Queue *, Event *);
-Event * findSTARTfromQueue(Queue *, int);
+Event * findAnEventFromQueue(Queue *, int);
 bool isEmpty(Queue *);
 void freeQueue(Queue *);
 

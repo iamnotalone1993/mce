@@ -144,7 +144,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 		while (!isProcessListEmpty(_event -> processList)){
 			Process *_startProcess = getProcessfromProcessList(_event->processList);
 			/*Find corresponding START from corresponding Queue*/
-			Event * _event = findSTARTfromQueue(queueArr[_startProcess -> num], aCurrentProcess);
+			Event * _event = findAnEventFromQueue(queueArr[_startProcess -> num], START);
 			if (_event == NULL){
 				do{
 					assert(fgets(_buffer, BUFFER_SIZE, pFile[_startProcess -> num]));
@@ -159,11 +159,12 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			assert (_returnCode != -1);
 		}
 
-		/*Read file to find WAIT*/
-		do{
-			assert(fgets(_buffer, BUFFER_SIZE, pFile[aCurrentProcess]));
-		} while(addEvent2Queue(_buffer, queueArr[aCurrentProcess]) -> code != WAIT);
-
+		/*Find WAIT from the queue if not found read file to find WAIT*/
+		if (findAnEventFromQueue(queueArr[aCurrentProcess], WAIT) == NULL){
+			do{
+				assert(fgets(_buffer, BUFFER_SIZE, pFile[aCurrentProcess]));
+			} while(addEvent2Queue(_buffer, queueArr[aCurrentProcess]) -> code != WAIT);
+		}
 		//TODO: Add POST to epoch to detect MCE
 
 		free(_buffer);

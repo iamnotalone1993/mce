@@ -67,11 +67,11 @@ Event * retrieve(Queue * aQueue, int eventCode) {
 	return anEvent;
 }
 
-Event * findSTARTfromQueue(Queue * aQueue, int aCurrentProcess){
-	/* Find the START event from the Queue*/
+Event * findAnEventFromQueue(Queue * aQueue, int anEvent){
+	/* Find the event from the Queue*/
 	Event * _pEvent = aQueue -> front;
 	while (_pEvent != NULL) {
-		if (_pEvent -> code == START) {
+		if (_pEvent -> code == anEvent) {
 			return _pEvent;
 			break;
 		}

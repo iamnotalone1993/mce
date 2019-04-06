@@ -82,6 +82,6 @@ void freeProcessList(ProcessList * aProcessList) {
 }
 
 bool isProcessListEmpty(ProcessList *aProcessList){
-	if (aProcessList->head == aProcessList->tail) return true;
+	if (aProcessList->head == NULL) return true;
 	else return false;
 }
