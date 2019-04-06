@@ -139,7 +139,7 @@ int processTheEvent(Event * anEvent, int aCurrentProcess){
 	switch (anEvent->code){
 	case POST:{
 		/*Case POST: execute the process list, readfile to find WAIT*/
-		char * _buffer = (char *) malloc(1 * sizeof(char));
+		char * _buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
 
 		while (!isProcessListEmpty(anEvent -> processList)){
 			Process *_startProcess = getProcessfromProcessList(anEvent->processList);
@@ -151,6 +151,7 @@ int processTheEvent(Event * anEvent, int aCurrentProcess){
 					_event = addEvent2Queue(_buffer, queueArr[_startProcess -> num]);
 				} while(_event -> code != START);
 			}
+			free(_startProcess);
 			assert(_event != NULL);
 
 			/*Remove the corresponding START process from the START's process list*/

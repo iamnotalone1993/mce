@@ -36,15 +36,12 @@ void insertProcess2ProcessList(ProcessList * aProcessList, Process * aProcess) {
 Process * getProcessfromProcessList(ProcessList * aProcessList) {
 	if (aProcessList -> head == NULL) {
 		return NULL;
-	} else //if (aProcessList->head != NULL)
-	{
+	} else {//if (aProcessList->head != NULL)
 		Process * tmpProcess = aProcessList -> head;
-		aProcessList -> head = aProcessList -> head -> next;
 		if (aProcessList -> head == aProcessList -> tail) {
-			aProcessList -> tail = NULL;
-		} else //if (aProcessList->head != aProcessList->tail)
-		{
-			tmpProcess -> next = NULL;
+			aProcessList -> tail = aProcessList -> head = NULL;
+		} else {//if (aProcessList->head != aProcessList->tail)
+			aProcessList -> head = aProcessList -> head -> next;
 		}
 		return tmpProcess;
 	}
