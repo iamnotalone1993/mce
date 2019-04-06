@@ -13,11 +13,11 @@ void freeEvent(Event * anEvent) {
 	free(anEvent);
 }
 
-Queue * initQueue(Queue * aQueue) {
-	aQueue = (Queue * ) malloc(sizeof(Queue));
-	aQueue -> front = NULL;
-	aQueue -> rear = NULL;
-	return aQueue;
+Queue * initQueue() {
+	Queue * _queue = (Queue * ) malloc(sizeof(Queue));
+	_queue -> front = NULL;
+	_queue -> rear = NULL;
+	return _queue;
 }
 
 void enqueue(Queue * aQueue, Event * anEvent) {

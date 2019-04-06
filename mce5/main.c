@@ -27,7 +27,7 @@ int main(int argc, char ** argv) {
 			perror("Error opening file");
 		}
 
-		queueArr[i] = initQueue(queueArr[i]);
+		queueArr[i] = initQueue();
 	}
 
 	while (index < size) {
@@ -51,8 +51,7 @@ int main(int argc, char ** argv) {
 		} else { //if (isEmpty(queueArr[index]) == false)
 			printf("CP2\n");
 			/*Dequeue the event in the queue and process it*/
-			Event * anEvent = dequeue(queueArr[index]);
-			int returnCode = processTheEvent(anEvent, index);
+			int returnCode = processTheFirstEventFromQueue(queueArr, index);
 		}
 	}
 
@@ -135,14 +134,15 @@ Event * addEvent2Queue(char * anEventLine, Queue * aQueue){
 	return _event;
 }
 
-int processTheEvent(Event * anEvent, int aCurrentProcess){
-	switch (anEvent->code){
+int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
+	Event * _event = dequeue(aQueue[aCurrentProcess]);
+	switch (_event->code){
 	case POST:{
 		/*Case POST: execute the process list, readfile to find WAIT*/
 		char * _buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
 
-		while (!isProcessListEmpty(anEvent -> processList)){
-			Process *_startProcess = getProcessfromProcessList(anEvent->processList);
+		while (!isProcessListEmpty(_event -> processList)){
+			Process *_startProcess = getProcessfromProcessList(_event->processList);
 			/*Find corresponding START from corresponding Queue*/
 			Event * _event = findSTARTfromQueue(queueArr[_startProcess -> num], aCurrentProcess);
 			if (_event == NULL){
@@ -178,6 +178,6 @@ int processTheEvent(Event * anEvent, int aCurrentProcess){
 
 		break;
 	}
-
+	free(_event);
 	return 0;
 }

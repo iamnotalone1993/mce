@@ -18,6 +18,6 @@
 int getEventCode(char *);
 char *getData(char **);
 Event * addEvent2Queue(char *, Queue*);
-int processTheEvent(Event *, int);
+int processTheFirstEventFromQueue(Queue **, int);
 
 #endif /* MAIN_H_ */

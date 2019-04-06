@@ -25,7 +25,7 @@ typedef struct Queue {
 	Event *rear;
 } Queue;
 
-Queue * initQueue(Queue *);
+Queue * initQueue();
 void enqueue(Queue *, Event *);
 Event * dequeue(Queue *);
 void push(Queue *, Event *);
