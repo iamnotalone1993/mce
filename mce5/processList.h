@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include "const.h"
+
 typedef struct Process {
 	int num;
 	struct Process *next;

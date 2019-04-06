@@ -12,6 +12,8 @@
 
 #include "eventQueue.h"
 #include "processList.h"
+#include "indexProcessing.h"
+#include "const.h"
 
 int getEventCode(char *);
 char *getData(char **);
