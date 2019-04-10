@@ -10,6 +10,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "const.h"
 
 typedef struct Index{
@@ -21,11 +22,12 @@ typedef struct Index{
 typedef struct IndexQueue{
 	Index * front;
 	Index * rear;
+	int lastIndexBeforeGotoQueue;
 } IndexQueue;
 
 int nextIndex(IndexQueue *, int, int);
-bool isEmptyEventQueue(IndexQueue *);
-void pushToIndexQueue(IndexQueue *, int, int);
+bool isEmptyIndexQueue(IndexQueue *);
+void pushToIndexQueue(IndexQueue *, int, int, int);
 Index *popFromIndexQueue(IndexQueue *);
 
 

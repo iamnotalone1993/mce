@@ -9,7 +9,8 @@
 
 FILE ** pFile;
 Queue ** queueArr;
-
+IndexQueue *indexQueue;
+int status;
 int main(int argc, char ** argv) {
 	int size, index, eventCode, i;
 	char fileName[25], * buffer, * tmpBuffer, * tmpStr;
@@ -17,6 +18,8 @@ int main(int argc, char ** argv) {
 	size = atoi(argv[1]);
 	index = 0;
 	pFile = (FILE ** ) malloc(size * sizeof(FILE * ));
+	indexQueue = malloc(sizeof(IndexQueue));
+	indexQueue -> lastIndexBeforeGotoQueue = -1;
 
 	queueArr = (Queue ** ) malloc(size * sizeof(Queue * ));
 
@@ -31,25 +34,24 @@ int main(int argc, char ** argv) {
 	}
 
 	while (index < size) {
-		printf("HERE\n");
 		//getchar();
+		index = nextIndex(indexQueue, index, status);
+		DEBUG_PRINT("Index: %d, status: %d\n", index, status);
+		status = 0; //reset status for the next processing
 		if (isEmpty(queueArr[index]) == true) {
-			printf("CP1\n");
 			/*  Get an event from file and add event to the queue  */
 			/*  If there is no event in the file (EOF) change to the next file  */
 
 			buffer = (char * ) malloc(BUFFER_SIZE * sizeof(char));
 			if (fgets(buffer, BUFFER_SIZE, pFile[index]) != NULL) {
-				printf("CP11\n");
-
 				addEvent2Queue(buffer, queueArr[index]);
+				status |= READ_ONE_LINE;
 
 			} else { //if (fgets(buffer, BUFFER_SIZE, pFile[index]) == NULL)
-				++index;
+				status |= END_OF_ONE_FILE;
 			}
 			free(buffer);
 		} else { //if (isEmpty(queueArr[index]) == false)
-			printf("CP2\n");
 			/*Dequeue the event in the queue and process it*/
 			int returnCode = processTheFirstEventFromQueue(queueArr, index);
 		}
@@ -149,7 +151,15 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			if (_event == NULL){
 				do{
 					assert(fgets(_buffer, BUFFER_SIZE, pFile[_startProcess -> num]));
+
+					status |= READ_ONE_LINE_FROM_OTHER_FILE;
 					_event = addEvent2Queue(_buffer, queueArr[_startProcess -> num]);
+
+					/*If meet another POST event from other processes add that POST to
+					 * index queue for the next processing */
+					if (_event -> code == POST){
+						pushToIndexQueue(indexQueue, aCurrentProcess, _startProcess -> num, POST);
+					}
 				} while(_event -> code != START);
 			}
 			free(_startProcess);

@@ -8,12 +8,15 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
+#define DEBUG
+
 #include <assert.h>
 
 #include "eventQueue.h"
 #include "processList.h"
 #include "indexProcessing.h"
 #include "const.h"
+#include "debug.h"
 
 int getEventCode(char *);
 char *getData(char **);
