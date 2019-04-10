@@ -135,11 +135,12 @@ Event * addEvent2Queue(char * anEventLine, Queue * aQueue){
 }
 
 int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
-	Event * _event = dequeue(aQueue[aCurrentProcess]);
+	Event * _event = aQueue[aCurrentProcess] -> front;
 	switch (_event->code){
 	case POST:{
 		/*Case POST: execute the process list, readfile to find WAIT*/
 		char * _buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
+		_event = dequeue(aQueue[aCurrentProcess]);
 
 		while (!isProcessListEmpty(_event -> processList)){
 			Process *_startProcess = getProcessfromProcessList(_event->processList);
@@ -168,17 +169,32 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 		//TODO: Add POST to epoch to detect MCE
 
 		free(_buffer);
+		free(_event);
 		break;
 	}
 	case START:{
 		/*Wait for post to call all start in the START's process list*/
-
+		char * _buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
+		/*If processList of START is empty. It means all POSTs visitted this
+		 * start -> dequeue the START and readfile until found complete*/
+		if (isProcessListEmpty(_event -> processList)){
+			_event = dequeue(aQueue[aCurrentProcess]);
+			/*Find and read COMPLETE to queue*/
+			if (findAnEventFromQueue(queueArr[aCurrentProcess], COMPLETE) == NULL){
+				do{
+					assert(fgets(_buffer, BUFFER_SIZE, pFile[aCurrentProcess]));
+				} while (addEvent2Queue(_buffer, queueArr[aCurrentProcess]) -> code != COMPLETE);
+			}
+			// TODO: Process next state
+			// TODO: Add START to epoch to detect MCE
+			free(_event);
+		}
+		assert(!isProcessListEmpty(_event -> processList));
 		break;
 	}
 	default:
 
 		break;
 	}
-	free(_event);
 	return 0;
 }

@@ -2,3 +2,4 @@ dec
 *.o
 .cproject
 .project
+.settings
