@@ -9,9 +9,11 @@
 #define INDEXPROCESSING_H_
 
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include "const.h"
+#include "debug.h"
 
 typedef struct Index{
 	int index;

@@ -23,7 +23,7 @@ int nextIndex(IndexQueue * anIndexQueue, int aCurrentIndex, int status){
 	} else { //queue is not empty
 		Index * _index = popFromIndexQueue(anIndexQueue);
 		int _returnIndex = _index -> index;
-		assert(_index -> eventCode != POST);
+		assert(_index -> eventCode == POST);
 		free(_index);
 		return _returnIndex;
 	}
@@ -47,8 +47,9 @@ void pushToIndexQueue(IndexQueue * anIndexQueue, int aCurrentProcess, int anInde
 		//Save the last index to restore
 		anIndexQueue -> lastIndexBeforeGotoQueue = aCurrentProcess;
 	} else { // queue not empty
-		_index -> next = anIndexQueue -> front;
-		anIndexQueue -> front = _index;
+		_index -> next = NULL;
+		anIndexQueue -> rear -> next = _index;
+		anIndexQueue -> rear = _index;
 	}
 }
 
