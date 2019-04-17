@@ -62,7 +62,7 @@ int removeAprocessFromProcessList(ProcessList *aProcessList, int aProcess){
 		}
 
 		//the process is not in the start of list
-		while (_pProcess == NULL){
+		while (_pProcess != NULL){
 			if(_pProcess -> num == aProcess){
 				_pPreviousProcess -> next = _pProcess -> next;
 				if (_pProcess -> next == NULL) aProcessList -> tail = _pPreviousProcess;

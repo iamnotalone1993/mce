@@ -8,11 +8,11 @@
 #ifndef CONST_H_
 #define CONST_H_
 
-#define NO_READ							0x00000001
-#define READ_ONE_LINE					0x00000010
-#define READ_ONE_LINE_FROM_OTHER_FILE	0x00000100
-#define END_OF_ONE_FILE					0x00001000
-#define END_OF_ALL_FILE					0x00010000
+#define NO_READ							0x01
+#define READ_ONE_LINE					0x02
+#define READ_ONE_LINE_FROM_OTHER_FILE	0x04
+#define END_OF_ONE_FILE					0x08
+#define END_OF_ALL_FILE					0x10
 
 #define BUFFER_SIZE             512
 #define BASE                    10
