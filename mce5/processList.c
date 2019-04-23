@@ -85,3 +85,23 @@ bool isProcessListEmpty(ProcessList *aProcessList){
 	if (aProcessList->head == NULL) return true;
 	else return false;
 }
+
+int getNumberOfItemInProcessList(ProcessList * aProcessList){
+	int _result = 0;
+	Process * _iterProcess = aProcessList -> head;
+	while (_iterProcess != NULL){
+		_result ++;
+		_iterProcess = _iterProcess -> next;
+	}
+	return _result;
+}
+
+bool isTheNumberOfItemInTwoProcessListEqual(ProcessList * aProcessList, ProcessList * anotherProcessList){
+	if (getNumberOfItemInProcessList(aProcessList) == getNumberOfItemInProcessList(anotherProcessList)){
+		return true;
+	} else {
+		return false;
+	}
+
+
+}

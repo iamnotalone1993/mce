@@ -33,5 +33,7 @@ Process *getProcessfromProcessList(ProcessList *);
 int removeAprocessFromProcessList(ProcessList *, int);
 void freeProcessList(ProcessList *);
 bool isProcessListEmpty(ProcessList *);
+int getNumberOfItemInProcessList(ProcessList *);
+bool isTheNumberOfItemInTwoProcessListEqual(ProcessList *, ProcessList *);
 
 #endif /* PROCESSLIST_H_ */
