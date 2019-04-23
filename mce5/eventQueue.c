@@ -4,6 +4,7 @@ Event * initEvent(int eventCode) {
 	Event *anEvent = (Event * ) malloc(sizeof(Event));
 	anEvent -> code = eventCode;
 	anEvent -> processList = initProcessList();
+	anEvent -> checkProcessList = initProcessList();// for WAIT only
 	anEvent -> next = NULL;
 	return anEvent;
 }

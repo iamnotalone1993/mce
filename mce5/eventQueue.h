@@ -14,6 +14,7 @@
 typedef struct Event {
 	int code;
 	ProcessList *processList;
+	ProcessList *checkProcessList; // for WAIT only
 	struct Event *next;
 } Event;
 
