@@ -54,6 +54,7 @@ int main(int argc, char ** argv) {
 			free(buffer);
 		} else { //if (isEmpty(queueArr[index]) == false)
 			/*Dequeue the event in the queue and process it*/
+			DEBUG_PRINT("Process the first event, code: %d\n", queueArr[index] -> front -> code);
 			int returnCode = processTheFirstEventFromQueue(queueArr, index);
 		}
 	}
@@ -139,76 +140,154 @@ Event * addEvent2Queue(char * anEventLine, Queue * aQueue){
 
 int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 	Event * _event = aQueue[aCurrentProcess] -> front;
-	DEBUG_PRINT("Process the first event, code: %d\n", _event->code);
+	char * _buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
 	switch (_event->code){
 	case POST:{
-		/*Case POST: execute the process list, readfile to find WAIT*/
-		char * _buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
+		DEBUG_PRINT("  POST\n");
+		/*Case POST: readfile to find WAIT, execute the process list of POST*/
 		_event = dequeue(aQueue[aCurrentProcess]);
-
-		while (!isProcessListEmpty(_event -> processList)){
-			Process *_startProcess = getProcessfromProcessList(_event->processList);
-			/*Find corresponding START from corresponding Queue*/
-			Event * _startEvent = findAnEventFromQueue(queueArr[_startProcess -> num], START);
-			if (_startEvent == NULL){
-				do{
-					assert(fgets(_buffer, BUFFER_SIZE, pFile[_startProcess -> num]));
-					DEBUG_PRINT("Readline file: %d, contain: %s", _startProcess -> num, _buffer);
-					status = status || READ_ONE_LINE_FROM_OTHER_FILE;
-					_startEvent = addEvent2Queue(_buffer, queueArr[_startProcess -> num]);
-
-					/*If meet another POST event from other processes add that POST to
-					 * index queue for the next processing */
-					if (_startEvent -> code == POST){
-						pushToIndexQueue(indexQueue, aCurrentProcess, _startProcess -> num, POST);
-					}
-				} while(_startEvent -> code != START);
-			}
-			free(_startProcess);
-			assert(_startEvent != NULL);
-
-			/*Remove the corresponding START process from the START's process list*/
-			int _returnCode = removeAprocessFromProcessList(_startEvent -> processList, aCurrentProcess);
-			assert (_returnCode != -1);
-		}
 
 		/*Find WAIT from the queue if not found read file to find WAIT*/
 		if (findAnEventFromQueue(queueArr[aCurrentProcess], WAIT) == NULL){
 			do{
 				assert(fgets(_buffer, BUFFER_SIZE, pFile[aCurrentProcess]));
-				DEBUG_PRINT("Readline file: %d, contain: %s", aCurrentProcess, _buffer);
+				DEBUG_PRINT("    Readline file: %d, contain: %s", aCurrentProcess, _buffer);
 			} while(addEvent2Queue(_buffer, queueArr[aCurrentProcess]) -> code != WAIT);
 		}
+
+		while (!isProcessListEmpty(_event -> processList)){
+			Process *_startProcess = getProcessfromProcessList(_event->processList);
+
+			/*Find corresponding START from corresponding Queue*/
+			Event * _startEvent = findAnEventFromQueue(queueArr[_startProcess -> num], START);
+			if (_startEvent == NULL){
+				do{
+					assert(fgets(_buffer, BUFFER_SIZE, pFile[_startProcess -> num]));
+					DEBUG_PRINT("    Readline file: %d, contain: %s", _startProcess -> num, _buffer);
+					status = status || READ_ONE_LINE_FROM_OTHER_FILE;
+					_startEvent = addEvent2Queue(_buffer, queueArr[_startProcess -> num]);
+
+					/*If meet another POST event from other processes add that POST
+					 * (which is from other process) to index queue for the next processing */
+					if (_startEvent -> code == POST){
+						pushToIndexQueue(indexQueue, aCurrentProcess, _startProcess -> num, POST);
+					}
+				} while(_startEvent -> code != START);
+			}
+
+			/*Add the process (which is processed) of POST's processList to WAIT for later processing*/
+			//find WAIT
+			Event * _waitEvent = findAnEventFromQueue(queueArr[aCurrentProcess], WAIT);
+			assert(_waitEvent != NULL);
+
+			//add the POST's process to WAIT's processList
+			insertProcess2ProcessList(_waitEvent -> processList, _startProcess);
+			assert(_startEvent != NULL);
+
+			/*Remove the corresponding START process from the START's process list
+			 * and add that process to COMPLETE's processList*/
+			int _returnCode = removeAprocessFromProcessList(_startEvent -> processList, aCurrentProcess);
+			assert (_returnCode != -1);
+
+			//find the COMPLETE in the same queue of start
+			Event * _completeEvent = findAnEventFromQueue(queueArr[_startProcess -> num], COMPLETE);
+			//if found nothing, readfile
+			if (_completeEvent == NULL){
+				do{
+					assert(fgets(_buffer, BUFFER_SIZE, pFile[_startProcess -> num]));
+					DEBUG_PRINT("    Readline file: %d, contain: %s", _startProcess -> num, _buffer);
+					status = status || READ_ONE_LINE_FROM_OTHER_FILE;
+					_completeEvent = addEvent2Queue(_buffer, queueArr[_startProcess -> num]);
+				} while(_completeEvent -> code != COMPLETE);
+			}
+			assert(_completeEvent != NULL);
+			//add the process from START to COMPLETE
+			Process *_completeTmpProcess = malloc(sizeof(Process));
+			_completeTmpProcess -> num = aCurrentProcess;
+			insertProcess2ProcessList(_completeEvent -> processList, _completeTmpProcess);
+		}
+
 		//TODO: Add POST to epoch to detect MCE
 
-		free(_buffer);
 		free(_event);
 		break;
 	}
 	case START:{
+		DEBUG_PRINT("  START\n");
 		/*Wait for post to call all start in the START's process list*/
-		char * _buffer = (char *) malloc(BUFFER_SIZE * sizeof(char));
-		/*If processList of START is empty. It means all POSTs visitted this
-		 * start -> dequeue the START and readfile until found complete*/
+		/*If processList of START is empty. It means all POSTs visited this
+		 * start -> dequeue the START and readfile until found COMPLETE*/
 		if (isProcessListEmpty(_event -> processList)){
 			_event = dequeue(aQueue[aCurrentProcess]);
 			/*Find and read COMPLETE to queue*/
 			if (findAnEventFromQueue(queueArr[aCurrentProcess], COMPLETE) == NULL){
 				do{
 					assert(fgets(_buffer, BUFFER_SIZE, pFile[aCurrentProcess]));
-					DEBUG_PRINT("Readline file: %d, contain: %s", aCurrentProcess, _buffer);
+					DEBUG_PRINT("    Readline file: %d, contain: %s", aCurrentProcess, _buffer);
 				} while (addEvent2Queue(_buffer, queueArr[aCurrentProcess]) -> code != COMPLETE);
 			}
-			// TODO: Process next state
+			// TODO: Maybe need to find POST from other process
 			// TODO: Add START to epoch to detect MCE
 			free(_event);
 		}
-		assert(!isProcessListEmpty(_event -> processList));
+		assert(isProcessListEmpty(_event -> processList));
+		break;
+	}
+	case COMPLETE:{
+		DEBUG_PRINT("  COMPLETE\n");
+		assert(aQueue[aCurrentProcess] -> front -> code == COMPLETE);
+		/* Send complete message to corresponding WAIT
+		 * if if the WAIT event hasn't had its process list, leave a sign to it
+		 * The sign is -processID*/
+		// Go to each queue to find WAIT and add a sign to that process
+		_event = dequeue(aQueue[aCurrentProcess]);
+		while (!isProcessListEmpty(_event -> processList)){
+			// Get a process from the processList
+			Process * _tmpProcess = getProcessfromProcessList(_event -> processList);
+			assert(_tmpProcess != NULL);
+
+			// Find WAIT in corresponding queue (_tmpProcess index) if found nothing readfile
+			Event * _waitEvent = findAnEventFromQueue(queueArr[_tmpProcess -> num], WAIT);
+			if (_waitEvent == NULL){
+				do{
+					assert(fgets(_buffer, BUFFER_SIZE, pFile[_tmpProcess -> num]));
+					DEBUG_PRINT("    Readline file: %d, contain: %s", _tmpProcess -> num, _buffer);
+					_waitEvent = addEvent2Queue(_buffer, queueArr[_tmpProcess -> num]);
+				} while(_waitEvent -> code != WAIT);
+			}
+			assert(_waitEvent -> code == WAIT);
+
+			// Add the COMPLETE's process to the check queue of wait
+			Process * _toAddProcess = initProcess(aCurrentProcess);
+
+			insertProcess2ProcessList(_waitEvent -> checkProcessList, _toAddProcess);
+			free(_tmpProcess);
+		}
+
+		// TODO: Add complete to queue to detect MCE
+		free(_event);
+		break;
+	}
+	case WAIT:{
+		DEBUG_PRINT("  WAIT\n");
+		assert(false);
+		/* If all COMPLETEs have sent the message to this WAIT -> dequeue the event
+		 * and at the event to queue to detect MCE
+		 * else keep WAIT in queueArr and add direction to IndexQueue*/
+		if (isTheNumberOfItemInTwoProcessListEqual(_event -> processList, _event -> checkProcessList)){
+			_event = dequeue(queueArr[aCurrentProcess]);
+			free(_event);
+			//TODO: add WAIT to queue to detect MCE
+		} else {
+
+		}
+
 		break;
 	}
 	default:
 
 		break;
 	}
+	free(_buffer);
 	return 0;
 }
