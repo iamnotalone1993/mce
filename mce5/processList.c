@@ -47,6 +47,17 @@ Process * getProcessfromProcessList(ProcessList * aProcessList) {
 	}
 }
 
+bool findProcessFromProcessList(ProcessList * aProcessList, Process * aProcess){
+	Process * _iterProcess = aProcessList -> head;
+	while (_iterProcess != NULL){
+		if (_iterProcess -> num == aProcess -> num){
+			return true;
+		}
+		_iterProcess = _iterProcess -> next;
+	}
+	return false;
+}
+
 int removeAprocessFromProcessList(ProcessList *aProcessList, int aProcess){
 	if (aProcessList -> head == NULL) {
 		return -1;
@@ -96,12 +107,20 @@ int getNumberOfItemInProcessList(ProcessList * aProcessList){
 	return _result;
 }
 
-bool isTheNumberOfItemInTwoProcessListEqual(ProcessList * aProcessList, ProcessList * anotherProcessList){
+bool isTheItemEqual(ProcessList * aProcessList, ProcessList * anotherProcessList){
 	if (getNumberOfItemInProcessList(aProcessList) == getNumberOfItemInProcessList(anotherProcessList)){
 		return true;
 	} else {
 		return false;
 	}
+}
 
-
+void printProcessList(ProcessList * aProcessList, char * aMessage){
+	Process * _iterProcess = aProcessList -> head;
+	printf("%s: ", aMessage);
+	while (_iterProcess != NULL){
+		printf("%d, ", _iterProcess -> num);
+		_iterProcess = _iterProcess -> next;
+	}
+	printf("\n");
 }

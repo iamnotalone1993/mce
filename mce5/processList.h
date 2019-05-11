@@ -30,10 +30,12 @@ typedef struct ProcessList {
 ProcessList *initProcessList();
 void insertProcess2ProcessList(ProcessList *, Process *);
 Process *getProcessfromProcessList(ProcessList *);
+bool findProcessFromProcessList(ProcessList *, Process*);
 int removeAprocessFromProcessList(ProcessList *, int);
 void freeProcessList(ProcessList *);
 bool isProcessListEmpty(ProcessList *);
 int getNumberOfItemInProcessList(ProcessList *);
-bool isTheNumberOfItemInTwoProcessListEqual(ProcessList *, ProcessList *);
+bool isTheItemEqual(ProcessList *, ProcessList *);
+void printProcessList(ProcessList *, char *);
 
 #endif /* PROCESSLIST_H_ */
