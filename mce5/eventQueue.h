@@ -33,5 +33,6 @@ void push(Queue *, Event *);
 Event * findAnEventFromQueue(Queue *, int);
 bool isEmpty(Queue *);
 void freeQueue(Queue *);
+int getNumberOfItemInEventQueue(Queue *);
 
 #endif

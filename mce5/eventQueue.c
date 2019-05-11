@@ -81,6 +81,16 @@ Event * findAnEventFromQueue(Queue * aQueue, int anEvent){
 	return NULL;
 }
 
+int getNumberOfItemInEventQueue(Queue * aQueue){
+	int _numberOfItem = 0;
+	Event * _iterEvent = aQueue -> front;
+	while (_iterEvent != NULL){
+		_numberOfItem ++;
+		_iterEvent = _iterEvent -> next;
+	}
+	return _numberOfItem;
+}
+
 bool isEmpty(Queue * aQueue) {
 	if (aQueue -> front == NULL)
 		return true;
