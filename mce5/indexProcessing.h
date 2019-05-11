@@ -18,6 +18,7 @@
 typedef struct Index{
 	int index;
 	int eventCode;
+	int duty;
 	struct Index * next;
 } Index;
 
@@ -29,7 +30,8 @@ typedef struct IndexQueue{
 
 int nextIndex(IndexQueue *, int, int);
 bool isEmptyIndexQueue(IndexQueue *);
-void pushToIndexQueue(IndexQueue *, int, int, int);
+int getNumOfItemInIndexQueue(IndexQueue *);
+void pushToIndexQueue(IndexQueue *, int, int, int, int);
 Index *popFromIndexQueue(IndexQueue *);
 
 

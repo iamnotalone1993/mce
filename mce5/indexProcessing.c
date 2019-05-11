@@ -9,7 +9,7 @@
 int nextIndex(IndexQueue * anIndexQueue, int aCurrentIndex, int status){
 	if (isEmptyIndexQueue(anIndexQueue)){
 		if (anIndexQueue -> lastIndexBeforeGotoQueue == -1){
-			if ((status & END_OF_ONE_FILE) == END_OF_ONE_FILE){
+			if (status & END_OF_ONE_FILE){
 				return aCurrentIndex + 1;
 			} else { //Default TODO: handle other situation
 				return 0;
@@ -19,13 +19,20 @@ int nextIndex(IndexQueue * anIndexQueue, int aCurrentIndex, int status){
 			anIndexQueue -> lastIndexBeforeGotoQueue = -1;
 			return _returnValue;
 		}
-
 	} else { //queue is not empty
-		Index * _index = popFromIndexQueue(anIndexQueue);
-		int _returnIndex = _index -> index;
-		assert(_index -> eventCode == POST);
-		free(_index);
-		return _returnIndex;
+		// If duty completes then pop the first event in IndexQueue
+		// else continue to return current index until the duty complete
+		Index * _index = anIndexQueue -> front;
+
+		if (_index -> duty & status){
+			_index = popFromIndexQueue(anIndexQueue);
+			int _returnIndex = _index -> index;
+			assert(_index -> eventCode == POST || _index -> eventCode == WAIT);
+			free(_index);
+			return _returnIndex;
+		} else {
+			return _index -> index;
+		}
 	}
 	return 0;
 }
@@ -37,16 +44,40 @@ bool isEmptyIndexQueue (IndexQueue *anIndexQueue){
 		return false;
 }
 
-void pushToIndexQueue(IndexQueue * anIndexQueue, int aCurrentProcess, int anIndex, int anEventCode){
-	Index * _index = malloc(sizeof(Index));
-	_index -> eventCode = anEventCode;
-	_index -> index = anIndex;
+int getNumOfItemInIndexQueue(IndexQueue * anIndexQueue){
+	Index * _iterIndex = anIndexQueue -> front;
+	int _count = 0;
+	while (_iterIndex != NULL){
+		_count ++;
+		_iterIndex = _iterIndex -> next;
+	}
+	return _count;
+}
+
+void pushToIndexQueue(IndexQueue * anIndexQueue, int aCurrentProcess, int anIndex, int anEventCode, int aDuty){
 	if (anIndexQueue -> front == NULL && anIndexQueue -> rear == NULL){// Queue is empty
+		Index * _index = malloc(sizeof(Index));
+		_index -> duty = aDuty;
+		_index -> eventCode = anEventCode;
+		_index -> index = anIndex;
 		_index -> next = NULL;
 		anIndexQueue -> front = anIndexQueue -> rear = _index;
 		//Save the last index to restore
 		anIndexQueue -> lastIndexBeforeGotoQueue = aCurrentProcess;
 	} else { // queue not empty
+		//check if the duty has already in the queue
+		Index * _iterIndex = anIndexQueue -> front;
+		while (_iterIndex != NULL){
+			if (_iterIndex -> duty == aDuty && _iterIndex -> index == anIndex){
+				return;
+			}
+			_iterIndex = _iterIndex -> next;
+		}
+		Index * _index = malloc(sizeof(Index));
+		_index -> duty = aDuty;
+		_index -> eventCode = anEventCode;
+		_index -> index = anIndex;
+
 		_index -> next = NULL;
 		anIndexQueue -> rear -> next = _index;
 		anIndexQueue -> rear = _index;
