@@ -22,5 +22,6 @@ int getEventCode(char *);
 char *getData(char **);
 Event * addEvent2Queue(char *, Queue*);
 int processTheFirstEventFromQueue(Queue **, int);
+char * readOneLine(char *, FILE *);
 
 #endif /* MAIN_H_ */
