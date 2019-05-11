@@ -14,6 +14,9 @@
 #define END_OF_ONE_FILE					0x08
 #define END_OF_ALL_FILE					0x10
 
+#define POST_IS_PROCESSED				0x80
+#define COMPLETE_IS_PROCESSED			0x100
+
 #define BUFFER_SIZE             512
 #define BASE                    10
 
