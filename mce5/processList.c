@@ -26,8 +26,7 @@ ProcessList * initProcessList() {
 void insertProcess2ProcessList(ProcessList * aProcessList, Process * aProcess) {
 	if (aProcessList -> head == NULL) {
 		aProcessList -> head = aProcess;
-	} else //if (aProcessList->head != NULL)
-	{
+	} else { //if (aProcessList->head != NULL)
 		aProcessList -> tail -> next = aProcess;
 	}
 	aProcessList -> tail = aProcess;

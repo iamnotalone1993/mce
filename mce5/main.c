@@ -7,10 +7,6 @@
 
 #include "main.h"
 
-FILE ** pFile;
-Queue ** queueArr;
-IndexQueue *indexQueue;
-int status;
 int main(int argc, char ** argv) {
 	int size, index, eventCode, i;
 	char fileName[25], * buffer, * tmpBuffer, * tmpStr;
@@ -21,7 +17,11 @@ int main(int argc, char ** argv) {
 	indexQueue = malloc(sizeof(IndexQueue));
 	indexQueue -> lastIndexBeforeGotoQueue = -1;
 
+	primeArr = (mpz_t **) malloc(size * sizeof(mpz_t *));
+
 	queueArr = (Queue ** ) malloc(size * sizeof(Queue * ));
+
+	detectQueue = (DetectQueue **) malloc(size * sizeof(DetectEvent));
 
 	for (i = 0; i < size; ++i) {
 		sprintf(fileName, "./traces/trace%d", i);
@@ -30,8 +30,31 @@ int main(int argc, char ** argv) {
 			perror("Error opening file");
 		}
 
+		// Init global arrays
 		queueArr[i] = initQueue();
+		detectQueue[i] = initDetectQueue();
+
+		primeArr[i] = (mpz_t *) malloc(sizeof(mpz_t));
+		mpz_init(*primeArr[i]);
+
+		if (i >= 1) mpz_nextprime(*(primeArr[i]), *(primeArr[i - 1]));
+		else mpz_set_ui(*(primeArr[i]), 2);
 	}
+
+	// Init the initial event for the detectQueue
+	for (i = 0; i < size; i++){
+		mpz_t * _tmpMpz = malloc(sizeof(mpz_t));
+		mpz_init(*(_tmpMpz));
+		if (i > 0) mpz_nextprime(* (_tmpMpz), *(detectQueue[i - 1] -> rear -> clock));
+		else mpz_set_ui(*(_tmpMpz), 2);
+ 		DetectEvent * _tmpEvent = malloc(sizeof(DetectEvent));
+ 		_tmpEvent -> clock = _tmpMpz;
+ 		_tmpEvent -> code = DEFAULT;
+ 		_tmpEvent -> next = NULL;
+ 		pushToDetectQueue(detectQueue[i], _tmpEvent);
+ 		//PRINT_CLOCK("detectQueue initial clock: %s\n", *(detectQueue[i] -> rear -> clock));
+	}
+
 
 	while ((status & END_OF_ALL_FILE) != END_OF_ALL_FILE) {
 		//getchar();
@@ -71,11 +94,14 @@ int main(int argc, char ** argv) {
 
 	for (i = 0; i < size; ++i) {
 		fclose(pFile[i]);
-		freeQueue(queueArr[i]);
+
+		free(queueArr[i]);
+		free(detectQueue[i]);
 	}
 	free(pFile);
 	free(queueArr);
 	free(indexQueue);
+	free(detectQueue);
 	return 0;
 }
 
@@ -93,7 +119,6 @@ char * readOneLine(char * aBuffer, FILE * aFileHandle){
 Event * addEvent2Queue(char * anEventLine, Queue * aQueue){
 	int eventCode = getEventCode(anEventLine);
 	Event * _event = initEvent(eventCode);
-	// TODO: Post Start are different from Complete Wait -> switch case
 	char *pch = strtok(anEventLine, "\t\n");//get event code
 	//printf("%s\n", pch);// output Post
 	while ((pch = strtok(NULL, "\t\n")) != NULL){
@@ -114,7 +139,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 	case POST:{
 		DEBUG_PRINT("  POST\n");
 		status = status | POST_IS_PROCESSED;
-		/*Case POST: readfile to find WAIT, execute the process list of POST*/
+		/*Case POST: readfile to find WAIT, execute the process list of POST and send clock to START*/
 		_event = dequeue(aQueue[aCurrentProcess]);
 
 		/*Find WAIT from the queue if not found read file to find WAIT*/
@@ -155,9 +180,19 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			assert(_startEvent != NULL);
 
 			/*Remove the corresponding START process from the START's process list
+			 * send  the clock to this START process
 			 * and add that process to COMPLETE's processList*/
 			int _returnCode = removeAprocessFromProcessList(_startEvent -> processList, aCurrentProcess);
 			assert (_returnCode != -1);
+			// Save the clock that the POST sent
+			//	The procedure include: read current clock and send that clock to the START process
+			//  in this contest "send" mean make a LCM (START'clock, POST's clock)
+			mpz_t * _currentClock = getCurrentClock(detectQueue[aCurrentProcess], aCurrentProcess);
+			assert(_currentClock != NULL);
+			mpz_lcm(*(_startEvent -> savedClock), \
+					*(_startEvent -> savedClock), *_currentClock);
+
+			PRINT_CLOCK("      START's initial clock [%d]: %s\n", _startProcess -> num, *(_startEvent ->savedClock));
 
 			//find the COMPLETE in the same queue of start
 			Event * _completeEvent = findAnEventFromQueue(queueArr[_startProcess -> num], COMPLETE);
@@ -177,16 +212,21 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			insertProcess2ProcessList(_completeEvent -> processList, _completeTmpProcess);
 		}
 
-		//TODO: Add POST to epoch to detect MCE
+		// Add POST to epoch to detect MCE
+		assert(mpz_cmp_ui(*(_event -> savedClock), 1) == 0);
+		DetectEvent * _tmpDetectEvent = initDetectEvent(_event -> code, aCurrentProcess, _event -> savedClock);
+		pushToDetectQueue(detectQueue[aCurrentProcess], _tmpDetectEvent);
+		PRINT_CLOCK("******POST final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
 
-		free(_event);
+		assert(isProcessListEmpty(_event -> processList));
+		freeEvent(_event);
 		break;
 	}
 	case START:{
 		DEBUG_PRINT("  START\n");
 		/*Wait for post to call all start in the START's process list*/
 		/*If processList of START is empty. It means all POSTs visited this
-		 * start -> dequeue the START and readfile until found COMPLETE*/
+		 * start -> dequeue the START and read file until found COMPLETE*/
 		if (isProcessListEmpty(_event -> processList)){
 			_event = dequeue(aQueue[aCurrentProcess]);
 			/*Find and read COMPLETE to queue*/
@@ -197,10 +237,15 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 				} while (addEvent2Queue(_buffer, queueArr[aCurrentProcess]) -> code != COMPLETE);
 			}
 			// TODO: Maybe need to find POST from other process
-			// TODO: Add START to epoch to detect MCE
-			free(_event);
+			//Add START to epoch to detect MCE
+			DetectEvent * _tmpDetectEvent = initDetectEvent(_event -> code, aCurrentProcess, _event -> savedClock);
+			pushToDetectQueue(detectQueue[aCurrentProcess], _tmpDetectEvent);
+			PRINT_CLOCK("******START final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
+
+			assert(isProcessListEmpty(_event -> processList));
+			freeEvent(_event);
 		}
-		assert(isProcessListEmpty(_event -> processList));
+
 		break;
 	}
 	case COMPLETE:{
@@ -231,12 +276,18 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			// Add the COMPLETE's process to the check queue of wait
 			Process * _toAddProcess = initProcess(aCurrentProcess);
 
+			// TODO: Send the COMPLETE's clock to wait
+
 			insertProcess2ProcessList(_waitEvent -> checkProcessList, _toAddProcess);
 			free(_tmpProcess);
 		}
 
 		// TODO: Add complete to queue to detect MCE
-		free(_event);
+		DetectEvent * _tmpDetectEvent = initDetectEvent(_event -> code, aCurrentProcess, _event -> savedClock);
+		pushToDetectQueue(detectQueue[aCurrentProcess], _tmpDetectEvent);
+		PRINT_CLOCK("******COMPLETE final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
+
+		freeEvent(_event);
 		break;
 	}
 	case WAIT:{
@@ -246,8 +297,13 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 		 * else keep WAIT in queueArr and add direction to IndexQueue*/
 		if (isTheItemEqual(_event -> processList, _event -> checkProcessList)){
 			_event = dequeue(queueArr[aCurrentProcess]);
-			free(_event);
+			freeEvent(_event);
+
+
 			//TODO: add WAIT to queue to detect MCE
+			DetectEvent * _tmpDetectEvent = initDetectEvent(_event -> code, aCurrentProcess, _event -> savedClock);
+			pushToDetectQueue(detectQueue[aCurrentProcess], _tmpDetectEvent);
+			PRINT_CLOCK("******WAIT final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
 		} else {
 			/* Program reach this condition means that COMPLETEs from other processes
 			 * haven't completed
