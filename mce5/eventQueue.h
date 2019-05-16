@@ -7,12 +7,14 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <gmp.h>
 
 #include "processList.h"
 #include "const.h"
 
 typedef struct Event {
 	int code;
+	mpz_t * savedClock;
 	ProcessList *processList;
 	ProcessList *checkProcessList; // for WAIT only
 	struct Event *next;

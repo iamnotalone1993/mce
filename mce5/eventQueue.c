@@ -2,6 +2,8 @@
 
 Event * initEvent(int eventCode) {
 	Event *anEvent = (Event * ) malloc(sizeof(Event));
+	anEvent -> savedClock = (mpz_t *) malloc (sizeof(mpz_t));
+	mpz_init_set_ui(*(anEvent -> savedClock), 1);
 	anEvent -> code = eventCode;
 	anEvent -> processList = initProcessList();
 	anEvent -> checkProcessList = initProcessList();// for WAIT only
@@ -11,6 +13,9 @@ Event * initEvent(int eventCode) {
 
 void freeEvent(Event * anEvent) {
 	free(anEvent -> processList);
+	free(anEvent -> checkProcessList);
+	/*Undelete the clock because the this clock pointer will be managed by
+	 * the detect queue and the clock will be deleted at the final*/
 	free(anEvent);
 }
 
