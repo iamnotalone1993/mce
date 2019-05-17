@@ -281,7 +281,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			// Add the COMPLETE's process to the check queue of wait
 			Process * _toAddProcess = initProcess(aCurrentProcess);
 
-			// TODO: Send the COMPLETE's clock to wait
+			// Send the COMPLETE's clock to wait
 			mpz_t * _currentClock = getCurrentClock(detectQueue[aCurrentProcess], aCurrentProcess);
 			assert(_currentClock != NULL);
 			PRINT_CLOCK("      COMPLETE's current clock [%d]: %s", aCurrentProcess, * _currentClock);
@@ -294,7 +294,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			free(_tmpProcess);
 		}
 
-		// TODO: Add complete to queue to detect MCE
+		// Add complete to queue to detect MCE
 		DetectEvent * _tmpDetectEvent = initDetectEvent(_event -> code, aCurrentProcess, _event -> savedClock);
 		pushToDetectQueue(detectQueue[aCurrentProcess], _tmpDetectEvent);
 		PRINT_CLOCK("******COMPLETE final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
@@ -312,7 +312,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			freeEvent(_event);
 
 
-			//TODO: add WAIT to queue to detect MCE
+			// Add WAIT to queue to detect MCE
 			DetectEvent * _tmpDetectEvent = initDetectEvent(_event -> code, aCurrentProcess, _event -> savedClock);
 			pushToDetectQueue(detectQueue[aCurrentProcess], _tmpDetectEvent);
 			PRINT_CLOCK("******WAIT final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
