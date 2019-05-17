@@ -183,7 +183,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			 * send  the clock to this START process
 			 * and add that process to COMPLETE's processList*/
 			int _returnCode = removeAprocessFromProcessList(_startEvent -> processList, aCurrentProcess);
-			assert (_returnCode != -1);
+			// TODO: recheck assert (_returnCode != -1);
 			// Save the clock that the POST sent
 			//	The procedure include: read current clock and send that clock to the START process
 			//  in this contest "send" mean make a LCM (START'clock, POST's clock)
@@ -236,7 +236,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 					DEBUG_PRINT("    Readline file: %d, contain: %s", aCurrentProcess, _buffer);
 				} while (addEvent2Queue(_buffer, queueArr[aCurrentProcess]) -> code != COMPLETE);
 			}
-			// TODO: Maybe need to find POST from other process
+
 			//Add START to epoch to detect MCE
 			DetectEvent * _tmpDetectEvent = initDetectEvent(_event -> code, aCurrentProcess, _event -> savedClock);
 			pushToDetectQueue(detectQueue[aCurrentProcess], _tmpDetectEvent);
@@ -244,8 +244,13 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 
 			assert(isProcessListEmpty(_event -> processList));
 			freeEvent(_event);
+		} else {
+			Process * _iterProcess = _event -> processList -> head;
+			while (_iterProcess != NULL){
+				pushToIndexQueue(indexQueue, aCurrentProcess, _iterProcess -> num, START, POST_IS_PROCESSED);
+				_iterProcess = _iterProcess -> next;
+			}
 		}
-
 		break;
 	}
 	case COMPLETE:{
@@ -277,6 +282,13 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			Process * _toAddProcess = initProcess(aCurrentProcess);
 
 			// TODO: Send the COMPLETE's clock to wait
+			mpz_t * _currentClock = getCurrentClock(detectQueue[aCurrentProcess], aCurrentProcess);
+			assert(_currentClock != NULL);
+			PRINT_CLOCK("      COMPLETE's current clock [%d]: %s", aCurrentProcess, * _currentClock);
+			mpz_lcm(*(_waitEvent -> savedClock), \
+					*(_waitEvent -> savedClock), *_currentClock);
+
+			PRINT_CLOCK("      WAIT's initial clock [%d]: %s\n", _tmpProcess -> num, *(_waitEvent ->savedClock));
 
 			insertProcess2ProcessList(_waitEvent -> checkProcessList, _toAddProcess);
 			free(_tmpProcess);

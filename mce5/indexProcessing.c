@@ -27,7 +27,6 @@ int nextIndex(IndexQueue * anIndexQueue, int aCurrentIndex, int status){
 		if (_index -> duty & status){
 			_index = popFromIndexQueue(anIndexQueue);
 			int _returnIndex = _index -> index;
-			assert(_index -> eventCode == POST || _index -> eventCode == WAIT);
 			free(_index);
 			return _returnIndex;
 		} else {
