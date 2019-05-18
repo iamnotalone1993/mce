@@ -22,6 +22,7 @@ Queue ** queueArr;
 DetectQueue **detectQueue;
 IndexQueue *indexQueue;
 int status;
+int size;
 mpz_t ** primeArr;
 
 int getEventCode(char *);

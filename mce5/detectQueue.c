@@ -7,17 +7,6 @@
 
 #include "detectQueue.h"
 
-void testGMP(void){
-	mpz_t n;
-	mpz_init(n);
-	mpz_set_ui(n,1234);
-	mpz_mul(n, n, n);
-
-	printf ("n = ");
-	mpz_out_str(stdout,10,n);
-	printf ("\n");
-}
-
 DetectQueue * initDetectQueue(void){
 	DetectQueue * _returnPtr = (DetectQueue *)malloc(sizeof(DetectQueue));
 	_returnPtr -> front = _returnPtr -> rear = NULL;
@@ -82,16 +71,34 @@ void pushToDetectQueue(DetectQueue * aDetectQueue, DetectEvent * aDetectEvent){
 		assert(aDetectEvent -> next == NULL);
 	}
 }
+
 DetectEvent * popFromDetectQueue(DetectQueue * aDetectQueue){
-	if (aDetectQueue -> front == NULL){
+	// Pop the SECOND NODE because it is the initial event and it will not popped from the queue
+	if (aDetectQueue -> front == NULL || aDetectQueue -> front == aDetectQueue -> rear){
 		return NULL;
-	} else if (aDetectQueue -> front == aDetectQueue -> rear){
-		DetectEvent * _tmpDetectEvent = aDetectQueue -> front;
-		aDetectQueue -> front = aDetectQueue -> rear = NULL;
+	} else if (aDetectQueue -> front -> next == aDetectQueue -> rear){
+		DetectEvent * _tmpDetectEvent = aDetectQueue -> front -> next;
+		aDetectQueue -> front = aDetectQueue -> rear;
 		return _tmpDetectEvent;
 	} else {
-		DetectEvent * _tmpDetectEvent = aDetectQueue -> front;
-		aDetectQueue -> front = aDetectQueue -> front -> next;
+		DetectEvent * _tmpDetectEvent = aDetectQueue -> front -> next;
+		aDetectQueue -> front -> next = _tmpDetectEvent -> next;
 		return _tmpDetectEvent;
 	}
+}
+
+int detectMCE(DetectQueue ** aDetectArr){
+	int _numOfErr = 0;
+	int i = 0;
+	for (i = 0; i < size; i++){
+		DetectQueue * _iterQueue = aDetectArr[i];
+		DetectEvent * _iterDetectEvent = NULL;
+
+		// TODO: check the events that belong to the initial synchronize event (clock = 2 3 5 7)
+		while (_iterQueue -> front != _iterQueue -> rear){// Detect until only the initial event last
+			_iterDetectEvent = popFromDetectQueue(_iterQueue);
+			// TODO: find the parallel regions and detect MCE
+		}
+	}
+	return _numOfErr;
 }

@@ -8,7 +8,7 @@
 #include "main.h"
 
 int main(int argc, char ** argv) {
-	int size, index, eventCode, i;
+	int index, eventCode, i;
 	char fileName[25], * buffer, * tmpBuffer, * tmpStr;
 
 	size = atoi(argv[1]);
@@ -52,7 +52,7 @@ int main(int argc, char ** argv) {
  		_tmpEvent -> code = DEFAULT;
  		_tmpEvent -> next = NULL;
  		pushToDetectQueue(detectQueue[i], _tmpEvent);
- 		//PRINT_CLOCK("detectQueue initial clock: %s\n", *(detectQueue[i] -> rear -> clock));
+ 		//PRINT_CLOCK_NICE("detectQueue initial clock: %s\n", *(detectQueue[i] -> rear -> clock));
 	}
 
 
@@ -66,6 +66,14 @@ int main(int argc, char ** argv) {
 		// If all files have been read detect MCE for the last epoch and end the program
 		if (index >= size) {
 			status = status | END_OF_ALL_FILE;
+			// Detect MCE
+			int numOfErr = detectMCE(detectQueue);
+			continue;
+		}
+		if (index == TO_DETECT_MCE){
+			int numOfErr = detectMCE(detectQueue);
+			status = status | DETECT_MCE;
+			index = 0; // reset usual index
 			continue;
 		}
 		DEBUG_PRINT("ItemIn queueArr[%d]: %d\n", index, getNumberOfItemInEventQueue(queueArr[index]));
@@ -192,7 +200,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			mpz_lcm(*(_startEvent -> savedClock), \
 					*(_startEvent -> savedClock), *_currentClock);
 
-			PRINT_CLOCK("      START's initial clock [%d]: %s\n", _startProcess -> num, *(_startEvent ->savedClock));
+			PRINT_CLOCK_NICE("      START's initial clock [%d]: %s\n", _startProcess -> num, *(_startEvent ->savedClock));
 
 			//find the COMPLETE in the same queue of start
 			Event * _completeEvent = findAnEventFromQueue(queueArr[_startProcess -> num], COMPLETE);
@@ -216,7 +224,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 		assert(mpz_cmp_ui(*(_event -> savedClock), 1) == 0);
 		DetectEvent * _tmpDetectEvent = initDetectEvent(_event -> code, aCurrentProcess, _event -> savedClock);
 		pushToDetectQueue(detectQueue[aCurrentProcess], _tmpDetectEvent);
-		PRINT_CLOCK("******POST final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
+		PRINT_CLOCK_NICE("******POST final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
 
 		assert(isProcessListEmpty(_event -> processList));
 		freeEvent(_event);
@@ -240,7 +248,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			//Add START to epoch to detect MCE
 			DetectEvent * _tmpDetectEvent = initDetectEvent(_event -> code, aCurrentProcess, _event -> savedClock);
 			pushToDetectQueue(detectQueue[aCurrentProcess], _tmpDetectEvent);
-			PRINT_CLOCK("******START final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
+			PRINT_CLOCK_NICE("******START final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
 
 			assert(isProcessListEmpty(_event -> processList));
 			freeEvent(_event);
@@ -284,11 +292,11 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			// Send the COMPLETE's clock to wait
 			mpz_t * _currentClock = getCurrentClock(detectQueue[aCurrentProcess], aCurrentProcess);
 			assert(_currentClock != NULL);
-			PRINT_CLOCK("      COMPLETE's current clock [%d]: %s", aCurrentProcess, * _currentClock);
+			PRINT_CLOCK_NICE("      COMPLETE's current clock [%d]: %s", aCurrentProcess, * _currentClock);
 			mpz_lcm(*(_waitEvent -> savedClock), \
 					*(_waitEvent -> savedClock), *_currentClock);
 
-			PRINT_CLOCK("      WAIT's initial clock [%d]: %s\n", _tmpProcess -> num, *(_waitEvent ->savedClock));
+			PRINT_CLOCK_NICE("      WAIT's initial clock [%d]: %s\n", _tmpProcess -> num, *(_waitEvent ->savedClock));
 
 			insertProcess2ProcessList(_waitEvent -> checkProcessList, _toAddProcess);
 			free(_tmpProcess);
@@ -297,7 +305,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 		// Add complete to queue to detect MCE
 		DetectEvent * _tmpDetectEvent = initDetectEvent(_event -> code, aCurrentProcess, _event -> savedClock);
 		pushToDetectQueue(detectQueue[aCurrentProcess], _tmpDetectEvent);
-		PRINT_CLOCK("******COMPLETE final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
+		PRINT_CLOCK_NICE("******COMPLETE final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
 
 		freeEvent(_event);
 		break;
@@ -315,7 +323,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			// Add WAIT to queue to detect MCE
 			DetectEvent * _tmpDetectEvent = initDetectEvent(_event -> code, aCurrentProcess, _event -> savedClock);
 			pushToDetectQueue(detectQueue[aCurrentProcess], _tmpDetectEvent);
-			PRINT_CLOCK("******WAIT final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
+			PRINT_CLOCK_NICE("******WAIT final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
 		} else {
 			/* Program reach this condition means that COMPLETEs from other processes
 			 * haven't completed
@@ -332,7 +340,39 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 				_iterProcess = _iterProcess -> next;
 			}
 		}
+		break;
+	}
+	case BARRIER:{
+		DEBUG_PRINT("  Barrier\n");
+		_event = dequeue(queueArr[aCurrentProcess]);
+		status = status | BARRIER_IS_PROCESSED;
+		/* If processList is empty or leng of process list = size
+		 *  -> comm world
+		 * else -> comm non world*/
+		if (isProcessListEmpty(_event -> processList) || \
+				getNumberOfItemInProcessList(_event -> processList) == size){
+			int _iterProcess = 0;
+			/* When meet BARRIER find all other BARRIER from other files and queues by
+			 *  + find in the detectQueue and the indexQueue if the duty is not found
+			 *  -> add to index queue a duty
+			 * next add the duty DETECT_MCE to the indexQueue*/
+			// Add the duty to the index queue
+			// if the barrier have already in the detect queue or the duty have been made
+			// continue the next loop
+			for (_iterProcess = 0; _iterProcess < size; _iterProcess++){
+				if (_iterProcess != aCurrentProcess || \
+						detectQueue[_iterProcess] -> rear -> code != BARRIER){
+					pushToIndexQueue(indexQueue, aCurrentProcess, \
+							_iterProcess, BARRIER, BARRIER_IS_PROCESSED);
+				}
+			}
+			pushToIndexQueue(indexQueue, aCurrentProcess, aCurrentProcess, BARRIER, DETECT_MCE);
 
+			// Free BARRIER from queue and add BARRIER to detectQueue to detect MCE
+			freeEventWithClock(_event);
+		} else {// Comm non world
+			;// TODO: handle comm non world
+		}
 		break;
 	}
 	default:
@@ -348,50 +388,32 @@ int getEventCode(char * str) {
 	switch (str[i]) {
 	case 'L':
 		i = i + 2;
-		if (str[i] == 'a')
-			return LOAD;
-		else //if (str[i] == 'c')
-			return LOCK;
+		if (str[i] == 'a') return LOAD;
+		else return LOCK; //if (str[i] == 'c')
 	case 'S':
 		i++;
-		if (str[i] == 'e')
-			return SEND;
-		else //if (str[i] == 't')
-		{
+		if (str[i] == 'e') return SEND;
+		else {//if (str[i] == 't')
 			i++;
-			if (str[i] == 'o')
-				return STORE;
-			else //if (str[i] == 'a')
-				return START;
+			if (str[i] == 'o') return STORE;
+			else return START; //if (str[i] == 'a')
 		}
-	case 'G':
-		return GET;
+	case 'G': return GET;
 	case 'P':
 		i++;
-		if (str[i] == 'u')
-			return PUT;
-		else //if (str[i] == 'o')
-			return POST;
-	case 'A':
-		return ACCUMULATE;
-	case 'B':
-		return BARRIER;
+		if (str[i] == 'u') return PUT;
+		else return POST; //if (str[i] == 'o')
+	case 'A': return ACCUMULATE;
+	case 'B': return BARRIER;
 	case 'C':
 		i++;
-		if (str[i] == 'o')
-			return COMPLETE;
-		else //if (str[i] == 'r');
-			return CREATE;
-	case 'F':
-		return FENCE;
-	case 'R':
-		return RECV;
-	case 'U':
-		return UNLOCK;
-	case 'W':
-		return WAIT;
-	default:
-		return DEFAULT;
+		if (str[i] == 'o') return COMPLETE;
+		else return CREATE; //if (str[i] == 'r');
+	case 'F': return FENCE;
+	case 'R': return RECV;
+	case 'U': return UNLOCK;
+	case 'W': return WAIT;
+	default: return DEFAULT;
 	}
 }
 

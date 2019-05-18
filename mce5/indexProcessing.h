@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <gmp.h>
+
 #include "const.h"
 #include "debug.h"
 

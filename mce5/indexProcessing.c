@@ -23,14 +23,15 @@ int nextIndex(IndexQueue * anIndexQueue, int aCurrentIndex, int status){
 		// If duty completes then pop the first event in IndexQueue
 		// else continue to return current index until the duty complete
 		Index * _index = anIndexQueue -> front;
-
 		if (_index -> duty & status){
 			_index = popFromIndexQueue(anIndexQueue);
 			int _returnIndex = _index -> index;
 			free(_index);
 			return _returnIndex;
 		} else {
-			return _index -> index;
+			// if the duty is to detect mce -> return a streng index to trigger detectMCE
+			if (_index -> duty == DETECT_MCE) return TO_DETECT_MCE;
+			else return _index -> index;
 		}
 	}
 	return 0;
@@ -67,7 +68,8 @@ void pushToIndexQueue(IndexQueue * anIndexQueue, int aCurrentProcess, int anInde
 		//check if the duty has already in the queue
 		Index * _iterIndex = anIndexQueue -> front;
 		while (_iterIndex != NULL){
-			if (_iterIndex -> duty == aDuty && _iterIndex -> index == anIndex){
+			if ((_iterIndex -> duty == aDuty && _iterIndex -> index == anIndex)\
+					|| _iterIndex -> duty == DETECT_MCE){
 				return;
 			}
 			_iterIndex = _iterIndex -> next;

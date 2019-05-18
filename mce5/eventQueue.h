@@ -22,6 +22,7 @@ typedef struct Event {
 
 Event * initEvent(int);
 void freeEvent(Event *);
+void freeEventWithClock(Event *);
 
 typedef struct Queue {
 	Event *front;

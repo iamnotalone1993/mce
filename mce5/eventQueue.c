@@ -19,6 +19,13 @@ void freeEvent(Event * anEvent) {
 	free(anEvent);
 }
 
+void freeEventWithClock(Event * anEvent){
+	free(anEvent -> processList);
+	free(anEvent -> checkProcessList);
+	free(anEvent -> savedClock);
+	free(anEvent);
+}
+
 Queue * initQueue() {
 	Queue * _queue = (Queue * ) malloc(sizeof(Queue));
 	_queue -> front = NULL;

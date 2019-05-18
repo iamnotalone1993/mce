@@ -16,6 +16,10 @@
 
 #define POST_IS_PROCESSED				0x80
 #define COMPLETE_IS_PROCESSED			0x100
+#define BARRIER_IS_PROCESSED			0x200
+#define DETECT_MCE						0x400
+
+#define TO_DETECT_MCE					-1
 
 #define BUFFER_SIZE             512
 #define BASE                    10

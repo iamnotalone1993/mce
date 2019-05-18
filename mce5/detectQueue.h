@@ -29,6 +29,7 @@ typedef struct DetectQueue{
 
 extern mpz_t ** primeArr;
 extern DetectQueue ** detectQueue;
+extern int size;
 
 DetectQueue * initDetectQueue(void);
 DetectEvent * initDetectEvent(int, int, mpz_t *);
@@ -37,6 +38,7 @@ mpz_t * getPreviousClock(DetectQueue *, int);
 mpz_t * getCurrentClock(DetectQueue *, int);
 void pushToDetectQueue(DetectQueue *, DetectEvent *);
 DetectEvent * popFromDetectQueue(DetectQueue *);
+int detectMCE(DetectQueue **);
 
 
 #endif /* DETECTQUEUE_H_ */
