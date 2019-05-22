@@ -8,7 +8,7 @@
 #include "indexProcessing.h"
 int nextIndex(IndexQueue * anIndexQueue, int aCurrentIndex, int status){
 	if (isEmptyIndexQueue(anIndexQueue)){
-		if (anIndexQueue -> lastIndexBeforeGotoQueue == -1){
+		if (anIndexQueue -> lastIndexBeforeGotoQueue == -10){
 			if (status & END_OF_ONE_FILE){
 				return aCurrentIndex + 1;
 			} else { //Default TODO: handle other situation
@@ -16,22 +16,30 @@ int nextIndex(IndexQueue * anIndexQueue, int aCurrentIndex, int status){
 			}
 		} else {
 			int _returnValue = anIndexQueue -> lastIndexBeforeGotoQueue;
-			anIndexQueue -> lastIndexBeforeGotoQueue = -1;
+			anIndexQueue -> lastIndexBeforeGotoQueue = -10;
 			return _returnValue;
 		}
 	} else { //queue is not empty
 		// If duty completes then pop the first event in IndexQueue
 		// else continue to return current index until the duty complete
 		Index * _index = anIndexQueue -> front;
-		if (_index -> duty & status){
+		if (((_index -> duty & status) && aCurrentIndex == _index -> index)  /*Duty complete: normal case*/
+				|| ((_index -> duty & status) && _index -> duty == DETECT_MCE)){// duty complete: Detect MCE
 			_index = popFromIndexQueue(anIndexQueue);
-			int _returnIndex = _index -> index;
+			if (anIndexQueue -> front == NULL){
+				int _returnValue = anIndexQueue -> lastIndexBeforeGotoQueue;
+				anIndexQueue -> lastIndexBeforeGotoQueue = -10;
+				return _returnValue;
+			} else {
+				return anIndexQueue -> front -> index;
+			}
 			free(_index);
-			return _returnIndex;
-		} else {
-			// if the duty is to detect mce -> return a streng index to trigger detectMCE
-			if (_index -> duty == DETECT_MCE) return TO_DETECT_MCE;
-			else return _index -> index;
+		} else { // the duty is uncompleted
+			if (_index -> duty == DETECT_MCE){
+				return -1;
+			} else {
+				return anIndexQueue -> front -> index;
+			}
 		}
 	}
 	return 0;
@@ -55,7 +63,7 @@ int getNumOfItemInIndexQueue(IndexQueue * anIndexQueue){
 }
 
 void pushToIndexQueue(IndexQueue * anIndexQueue, int aCurrentProcess, int anIndex, int anEventCode, int aDuty){
-	if (anIndexQueue -> front == NULL && anIndexQueue -> rear == NULL){// Queue is empty
+	if (anIndexQueue -> front == NULL){// Queue is empty
 		Index * _index = malloc(sizeof(Index));
 		_index -> duty = aDuty;
 		_index -> eventCode = anEventCode;
@@ -97,4 +105,14 @@ Index *popFromIndexQueue(IndexQueue * anIndexQueue){
 		}
 		return _pIndex;
 	}
+}
+
+void printIndexQueue(IndexQueue * anIndexQueue){
+	Index * _iter = anIndexQueue -> front;
+	fprintf(stderr, "#**#Contain of indexQueue (index duty): ");
+	while (_iter != NULL){
+		fprintf(stderr, "%d %d;", _iter -> index, _iter -> duty);
+		_iter = _iter -> next;
+	}
+	fprintf(stderr, "\n");
 }

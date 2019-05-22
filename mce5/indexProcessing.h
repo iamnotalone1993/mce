@@ -35,6 +35,6 @@ bool isEmptyIndexQueue(IndexQueue *);
 int getNumOfItemInIndexQueue(IndexQueue *);
 void pushToIndexQueue(IndexQueue *, int, int, int, int);
 Index *popFromIndexQueue(IndexQueue *);
-
+void printIndexQueue(IndexQueue *);
 
 #endif /* INDEXPROCESSINT_H_ */

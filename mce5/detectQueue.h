@@ -33,6 +33,7 @@ extern int size;
 
 DetectQueue * initDetectQueue(void);
 DetectEvent * initDetectEvent(int, int, mpz_t *);
+void freeDetectEvent(DetectEvent *);
 bool isDetectQueueEmpty(DetectQueue *);
 mpz_t * getPreviousClock(DetectQueue *, int);
 mpz_t * getCurrentClock(DetectQueue *, int);

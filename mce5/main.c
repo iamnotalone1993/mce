@@ -16,6 +16,7 @@ int main(int argc, char ** argv) {
 	pFile = (FILE ** ) malloc(size * sizeof(FILE * ));
 	indexQueue = malloc(sizeof(IndexQueue));
 	indexQueue -> lastIndexBeforeGotoQueue = -1;
+	indexQueue -> front = indexQueue -> rear = NULL;
 
 	primeArr = (mpz_t **) malloc(size * sizeof(mpz_t *));
 
@@ -58,27 +59,34 @@ int main(int argc, char ** argv) {
 
 	while ((status & END_OF_ALL_FILE) != END_OF_ALL_FILE) {
 		//getchar();
+
 		index = nextIndex(indexQueue, index, status);
 		DEBUG_PRINT("Index: %d, status: 0x%x, ItemInIndexQueue: %d lastIndex: %d\n"\
 				, index, status, \
 				getNumOfItemInIndexQueue(indexQueue), indexQueue -> lastIndexBeforeGotoQueue);
+		printIndexQueue(indexQueue);
+
+		status = 0; //reset status for the next processing
 
 		// If all files have been read detect MCE for the last epoch and end the program
 		if (index >= size) {
 			status = status | END_OF_ALL_FILE;
 			// Detect MCE
 			int numOfErr = detectMCE(detectQueue);
+			DEBUG_PRINT("******************************************************************************\n");
 			continue;
 		}
+
 		if (index == TO_DETECT_MCE){
 			int numOfErr = detectMCE(detectQueue);
 			status = status | DETECT_MCE;
 			index = 0; // reset usual index
+			DEBUG_PRINT("******************************************************************************\n");
 			continue;
 		}
 		DEBUG_PRINT("ItemIn queueArr[%d]: %d\n", index, getNumberOfItemInEventQueue(queueArr[index]));
 
-		status = 0; //reset status for the next processing
+
 
 
 		if (isEmpty(queueArr[index]) == true) {
@@ -98,6 +106,7 @@ int main(int argc, char ** argv) {
 			DEBUG_PRINT("Process the first event, code: %d\n", queueArr[index] -> front -> code);
 			int returnCode = processTheFirstEventFromQueue(queueArr, index);
 		}
+		DEBUG_PRINT("******************************************************************************\n");
 	}
 
 	for (i = 0; i < size; ++i) {
@@ -159,8 +168,8 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 		}
 
 		while (!isProcessListEmpty(_event -> processList)){
-			Process *_startProcess = getProcessfromProcessList(_event->processList);
-
+			Process * _startProcess = getProcessfromProcessList(_event -> processList);
+			DEBUG_PRINT("  POST %d\n", _startProcess -> num);
 			/*Find corresponding START from corresponding Queue*/
 			Event * _startEvent = findAnEventFromQueue(queueArr[_startProcess -> num], START);
 			if (_startEvent == NULL){
@@ -195,6 +204,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			// Save the clock that the POST sent
 			//	The procedure include: read current clock and send that clock to the START process
 			//  in this contest "send" mean make a LCM (START'clock, POST's clock)
+
 			mpz_t * _currentClock = getCurrentClock(detectQueue[aCurrentProcess], aCurrentProcess);
 			assert(_currentClock != NULL);
 			mpz_lcm(*(_startEvent -> savedClock), \
@@ -366,7 +376,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 							_iterProcess, BARRIER, BARRIER_IS_PROCESSED);
 				}
 			}
-			pushToIndexQueue(indexQueue, aCurrentProcess, aCurrentProcess, BARRIER, DETECT_MCE);
+			pushToIndexQueue(indexQueue, aCurrentProcess, -1, BARRIER, DETECT_MCE);
 
 			// Free BARRIER from queue and add BARRIER to detectQueue to detect MCE
 			freeEventWithClock(_event);

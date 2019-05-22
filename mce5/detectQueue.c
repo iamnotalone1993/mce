@@ -33,6 +33,11 @@ DetectEvent * initDetectEvent(int anEventCode, int anIndex, mpz_t * aInitialCloc
 	return _returnEvent;
 }
 
+void freeDetectEvent(DetectEvent * aDetectEvent){
+	free(aDetectEvent -> clock);
+	free(aDetectEvent);
+}
+
 mpz_t * getPreviousClock(DetectQueue * aDetectQueue, int aProcess){
 	assert(aDetectQueue -> front != NULL);
 	if (aDetectQueue -> front == aDetectQueue -> rear){
@@ -78,7 +83,7 @@ DetectEvent * popFromDetectQueue(DetectQueue * aDetectQueue){
 		return NULL;
 	} else if (aDetectQueue -> front -> next == aDetectQueue -> rear){
 		DetectEvent * _tmpDetectEvent = aDetectQueue -> front -> next;
-		aDetectQueue -> front = aDetectQueue -> rear;
+		aDetectQueue -> rear = aDetectQueue -> front;
 		return _tmpDetectEvent;
 	} else {
 		DetectEvent * _tmpDetectEvent = aDetectQueue -> front -> next;
@@ -98,6 +103,7 @@ int detectMCE(DetectQueue ** aDetectArr){
 		while (_iterQueue -> front != _iterQueue -> rear){// Detect until only the initial event last
 			_iterDetectEvent = popFromDetectQueue(_iterQueue);
 			// TODO: find the parallel regions and detect MCE
+			freeDetectEvent(_iterDetectEvent);
 		}
 	}
 	return _numOfErr;
