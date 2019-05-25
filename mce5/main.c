@@ -327,6 +327,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 		 * else keep WAIT in queueArr and add direction to IndexQueue*/
 		if (isTheItemEqual(_event -> processList, _event -> checkProcessList)){
 			_event = dequeue(queueArr[aCurrentProcess]);
+
 			freeEvent(_event);
 
 
@@ -339,6 +340,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			 * haven't completed
 			 * -> Add direction to IndexQueue to read, until all process form WAIT's
 			 * processList complete (have been checked)*/
+			//TODO: use isProcessListEmpty to update processList -> head and tail
 			Process * _iterProcess = _event -> processList -> head;
 			while (_iterProcess != NULL){
 				// if this _iterProcess does not present in checkProcessList it means the COMPLETE
@@ -354,13 +356,14 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 	}
 	case BARRIER:{
 		DEBUG_PRINT("  Barrier\n");
-		_event = dequeue(queueArr[aCurrentProcess]);
-		status = status | BARRIER_IS_PROCESSED;
 		/* If processList is empty or leng of process list = size
 		 *  -> comm world
 		 * else -> comm non world*/
-		if (isProcessListEmpty(_event -> processList) || \
-				getNumberOfItemInProcessList(_event -> processList) == size){
+		if ((isProcessListEmpty(_event -> processList) || \
+				getNumberOfItemInProcessList(_event -> processList) == size)\
+				&& mpz_cmp_ui(*(_event -> savedClock), 1 ) == 0){
+			_event = dequeue(queueArr[aCurrentProcess]);
+			status = status | BARRIER_IS_PROCESSED;
 			int _iterProcess = 0;
 			/* When meet BARRIER find all other BARRIER from other files and queues by
 			 *  + find in the detectQueue and the indexQueue if the duty is not found
@@ -381,7 +384,62 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			// Free BARRIER from queue and add BARRIER to detectQueue to detect MCE
 			freeEventWithClock(_event);
 		} else {// Comm non world
-			;// TODO: handle comm non world
+			// TODO: handle comm non world
+			status = status | NONCOMM_BARRIER_IS_PROCESSED;
+			/* If all Barriers in the processList have sent the clock
+			 *  -> dequeue and add barrier to detectQueue to detect MCE
+			 * Else
+			 *  +> find all process in the barrier list
+			 *  -> send clock to all BARRIERs*/
+			if (isTheItemEqual(_event -> processList, _event -> checkProcessList)){
+				_event = dequeue(queueArr[aCurrentProcess]);
+				freeEvent(_event);
+
+				// Add BARRIER to queue to detect MCE
+				DetectEvent * _tmpDetectEvent = initDetectEvent(_event -> code, aCurrentProcess, _event -> savedClock);
+				pushToDetectQueue(detectQueue[aCurrentProcess], _tmpDetectEvent);
+				PRINT_CLOCK_NICE("******BARRIER final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
+
+			} else {
+				mpz_t * _currentClock = getCurrentClock(detectQueue[aCurrentProcess], aCurrentProcess);
+				Process * _iterProcess = _event -> processList -> head;
+				while (_iterProcess != NULL){
+					// Find the BARRIER from the corresponding queue
+					Event * _tmpEvent = findAnEventFromQueue(queueArr[_iterProcess -> num], BARRIER);
+					if (_tmpEvent == NULL){
+						// Read file until Barrier is read
+						do{
+							assert(readOneLine(_buffer, pFile[_iterProcess -> num]));
+							DEBUG_PRINT("    Readline file: %d, contain: %s", _iterProcess -> num, _buffer);
+							_tmpEvent = addEvent2Queue(_buffer, queueArr[_iterProcess -> num]);
+						} while(_tmpEvent -> code != BARRIER);
+					}
+					assert(_tmpEvent != NULL);
+
+					// Add Indexs to index queue to find the remain barriers
+					if (_iterProcess-> num != aCurrentProcess && isProcessListEmpty(_tmpEvent -> checkProcessList)){
+						pushToIndexQueue(indexQueue, aCurrentProcess, _iterProcess -> num, BARRIER, NONCOMM_BARRIER_IS_PROCESSED);
+					}
+
+
+					// Add this Barrier process to the checklist of other Barrier processes
+					Process * _toAddProcess = initProcess(aCurrentProcess);
+					insertProcess2ProcessList(_tmpEvent -> checkProcessList, _toAddProcess);
+
+					// Send the BARRIER's clock to other BARRIERs
+					assert(_currentClock != NULL);
+					PRINT_CLOCK_NICE("      BARRIER's current clock [%d]: %s", aCurrentProcess, * _currentClock);
+					mpz_lcm(*(_tmpEvent -> savedClock), \
+							*(_tmpEvent -> savedClock), *_currentClock);
+
+					PRINT_CLOCK_NICE("      BARRIER's initial clock [%d]: %s\n", _iterProcess -> num, *(_tmpEvent ->savedClock));
+
+					// Next iteration
+					_iterProcess = _iterProcess -> next;
+				}
+			}
+
+
 		}
 		break;
 	}
@@ -426,4 +484,3 @@ int getEventCode(char * str) {
 	default: return DEFAULT;
 	}
 }
-

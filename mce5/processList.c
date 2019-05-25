@@ -23,6 +23,15 @@ ProcessList * initProcessList() {
 	return aProcessList;
 }
 
+void freeProcessList(ProcessList * anProcessList){
+	Process * _iterProcess = anProcessList -> head;
+	while (_iterProcess != NULL){
+		free(_iterProcess);
+		_iterProcess = _iterProcess -> next;
+	}
+	free(anProcessList);
+}
+
 void insertProcess2ProcessList(ProcessList * aProcessList, Process * aProcess) {
 	if (aProcessList -> head == NULL) {
 		aProcessList -> head = aProcess;
@@ -85,10 +94,6 @@ int removeAprocessFromProcessList(ProcessList *aProcessList, int aProcess){
 		}
 	}
 	return -1;
-}
-
-void freeProcessList(ProcessList * aProcessList) {
-	free(aProcessList);
 }
 
 bool isProcessListEmpty(ProcessList *aProcessList){

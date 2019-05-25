@@ -12,8 +12,9 @@ Event * initEvent(int eventCode) {
 }
 
 void freeEvent(Event * anEvent) {
-	free(anEvent -> processList);
-	free(anEvent -> checkProcessList);
+	freeProcessList(anEvent -> processList);
+	freeProcessList(anEvent -> checkProcessList);
+
 	/*Undelete the clock because the this clock pointer will be managed by
 	 * the detect queue and the clock will be deleted at the final*/
 	free(anEvent);

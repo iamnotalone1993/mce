@@ -28,11 +28,11 @@ typedef struct ProcessList {
 } ProcessList;
 
 ProcessList *initProcessList();
+void freeProcessList(ProcessList *);
 void insertProcess2ProcessList(ProcessList *, Process *);
 Process *getProcessfromProcessList(ProcessList *);
 bool findProcessFromProcessList(ProcessList *, Process*);
 int removeAprocessFromProcessList(ProcessList *, int);
-void freeProcessList(ProcessList *);
 bool isProcessListEmpty(ProcessList *);
 int getNumberOfItemInProcessList(ProcessList *);
 bool isTheItemEqual(ProcessList *, ProcessList *);
