@@ -17,6 +17,8 @@ int main(int argc, char ** argv) {
 	indexQueue = malloc(sizeof(IndexQueue));
 	indexQueue -> lastIndexBeforeGotoQueue = -1;
 	indexQueue -> front = indexQueue -> rear = NULL;
+	indexQueue -> findDetectMCE = false;
+	indexQueue -> currentPriority  = 0;
 
 	primeArr = (mpz_t **) malloc(size * sizeof(mpz_t *));
 
@@ -61,9 +63,9 @@ int main(int argc, char ** argv) {
 		//getchar();
 
 		index = nextIndex(indexQueue, index, status);
-		DEBUG_PRINT("Index: %d, status: 0x%x, ItemInIndexQueue: %d lastIndex: %d\n"\
-				, index, status, \
-				getNumOfItemInIndexQueue(indexQueue), indexQueue -> lastIndexBeforeGotoQueue);
+		DEBUG_PRINT("Index: %d, status: 0x%x, ItemInIndexQueue: %d lastIndex: %d curPri: %d\n"\
+				, index, status, getNumOfItemInIndexQueue(indexQueue), \
+				indexQueue -> lastIndexBeforeGotoQueue, getCurrentPriority(indexQueue));
 		printIndexQueue(indexQueue);
 
 		status = 0; //reset status for the next processing
@@ -167,6 +169,9 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			} while(addEvent2Queue(_buffer, queueArr[aCurrentProcess]) -> code != WAIT);
 		}
 
+		// init the priority for the next index
+		int nextPriority = getCurrentPriority(indexQueue) + 1;
+
 		while (!isProcessListEmpty(_event -> processList)){
 			Process * _startProcess = getProcessfromProcessList(_event -> processList);
 			DEBUG_PRINT("  POST %d\n", _startProcess -> num);
@@ -182,7 +187,7 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 					/*If meet another POST event from other processes add that POST
 					 * (which is from other process) to index queue for the next processing */
 					if (_startEvent -> code == POST){
-						pushToIndexQueue(indexQueue, aCurrentProcess, _startProcess -> num, POST, POST_IS_PROCESSED);
+						pushToIndexQueue(indexQueue, aCurrentProcess, _startProcess -> num, POST, POST_IS_PROCESSED, nextPriority);
 					}
 				} while(_startEvent -> code != START);
 			}
@@ -244,7 +249,8 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 		DEBUG_PRINT("  START\n");
 		/*Wait for post to call all start in the START's process list*/
 		/*If processList of START is empty. It means all POSTs visited this
-		 * start -> dequeue the START and read file until found COMPLETE*/
+		 * start -> dequeue the START and read file until found COMPLETE
+		 *Else add duty to indexQueue to find other POST*/
 		if (isProcessListEmpty(_event -> processList)){
 			_event = dequeue(aQueue[aCurrentProcess]);
 			/*Find and read COMPLETE to queue*/
@@ -264,8 +270,11 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			freeEvent(_event);
 		} else {
 			Process * _iterProcess = _event -> processList -> head;
+			// init the next priority
+			int nextPriority = getCurrentPriority(indexQueue) + 1;
 			while (_iterProcess != NULL){
-				pushToIndexQueue(indexQueue, aCurrentProcess, _iterProcess -> num, START, POST_IS_PROCESSED);
+				pushToIndexQueue(indexQueue, aCurrentProcess, _iterProcess -> num, START, \
+						POST_IS_PROCESSED, nextPriority);
 				_iterProcess = _iterProcess -> next;
 			}
 		}
@@ -274,9 +283,8 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 	case COMPLETE:{
 		DEBUG_PRINT("  COMPLETE\n");
 		status = status | COMPLETE_IS_PROCESSED;
-		assert(aQueue[aCurrentProcess] -> front -> code == COMPLETE);
 		/* Send complete message to corresponding WAIT
-		 * if if the WAIT event hasn't had its process list, leave a sign to it
+		 * if the WAIT event hasn't had its process list, leave a sign to it (checkProcessList)
 		 * The sign is -processID*/
 		// Go to each queue to find WAIT and add a sign to that process
 		_event = dequeue(aQueue[aCurrentProcess]);
@@ -342,12 +350,13 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			 * processList complete (have been checked)*/
 			//TODO: use isProcessListEmpty to update processList -> head and tail
 			Process * _iterProcess = _event -> processList -> head;
+			int nextPriority = getCurrentPriority(indexQueue) + 1;
 			while (_iterProcess != NULL){
 				// if this _iterProcess does not present in checkProcessList it means the COMPLETE
 				// does not visit this WAIT
 				// -> add a direction to IndexQueue to read the COMPLETE
 				if (!findProcessFromProcessList(_event -> checkProcessList, _iterProcess)){
-					pushToIndexQueue(indexQueue, aCurrentProcess, _iterProcess -> num, WAIT, COMPLETE_IS_PROCESSED);
+					pushToIndexQueue(indexQueue, aCurrentProcess, _iterProcess -> num, WAIT, COMPLETE_IS_PROCESSED, nextPriority);
 				}
 				_iterProcess = _iterProcess -> next;
 			}
@@ -355,13 +364,14 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 		break;
 	}
 	case BARRIER:{
-		DEBUG_PRINT("  Barrier\n");
 		/* If processList is empty or leng of process list = size
 		 *  -> comm world
 		 * else -> comm non world*/
+
 		if ((isProcessListEmpty(_event -> processList) || \
 				getNumberOfItemInProcessList(_event -> processList) == size)\
 				&& mpz_cmp_ui(*(_event -> savedClock), 1 ) == 0){
+			DEBUG_PRINT("  Barrier commworld\n");
 			_event = dequeue(queueArr[aCurrentProcess]);
 			status = status | BARRIER_IS_PROCESSED;
 			int _iterProcess = 0;
@@ -369,23 +379,28 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 			 *  + find in the detectQueue and the indexQueue if the duty is not found
 			 *  -> add to index queue a duty
 			 * next add the duty DETECT_MCE to the indexQueue*/
+
 			// Add the duty to the index queue
 			// if the barrier have already in the detect queue or the duty have been made
 			// continue the next loop
-			for (_iterProcess = 0; _iterProcess < size; _iterProcess++){
-				if (_iterProcess != aCurrentProcess || \
-						detectQueue[_iterProcess] -> rear -> code != BARRIER){
-					pushToIndexQueue(indexQueue, aCurrentProcess, \
-							_iterProcess, BARRIER, BARRIER_IS_PROCESSED);
+			if (!isFindDetectMCE(indexQueue)){
+				int nextIndex = INT_MAX;
+				for (_iterProcess = 0; _iterProcess < size; _iterProcess++){
+					if (_iterProcess != aCurrentProcess || \
+							detectQueue[_iterProcess] -> rear -> code != BARRIER){
+						pushToIndexQueue(indexQueue, aCurrentProcess, \
+								_iterProcess, BARRIER, BARRIER_IS_PROCESSED, nextIndex);
+					}
 				}
+				pushToIndexQueue(indexQueue, aCurrentProcess, -1, BARRIER, DETECT_MCE, nextIndex);
 			}
-			pushToIndexQueue(indexQueue, aCurrentProcess, -1, BARRIER, DETECT_MCE);
 
 			// Free BARRIER from queue and add BARRIER to detectQueue to detect MCE
 			freeEventWithClock(_event);
 		} else {// Comm non world
 			// TODO: handle comm non world
-			status = status | NONCOMM_BARRIER_IS_PROCESSED;
+			DEBUG_PRINT("  Barrier comm non world\n");
+			status = status | NBARRIER_IS_PROCESSED;
 			/* If all Barriers in the processList have sent the clock
 			 *  -> dequeue and add barrier to detectQueue to detect MCE
 			 * Else
@@ -396,18 +411,31 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 				freeEvent(_event);
 
 				// Add BARRIER to queue to detect MCE
+				PRINT_CLOCK_NICE("******BARRIER initial clock  kim [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
 				DetectEvent * _tmpDetectEvent = initDetectEvent(_event -> code, aCurrentProcess, _event -> savedClock);
+				status = status | PUSH_NBARRIER_TO_DETECTQ;
 				pushToDetectQueue(detectQueue[aCurrentProcess], _tmpDetectEvent);
 				PRINT_CLOCK_NICE("******BARRIER final clock [%d]: %s\n", aCurrentProcess, *(_event -> savedClock));
 
 			} else {
 				mpz_t * _currentClock = getCurrentClock(detectQueue[aCurrentProcess], aCurrentProcess);
 				Process * _iterProcess = _event -> processList -> head;
+
+				// init the next index priority
+				int nextPriority = getCurrentPriority(indexQueue) + 1;
+				bool firstBarrierInGroup = false;
+				if (_event -> checkProcessList -> head == NULL){
+					firstBarrierInGroup = true;
+				}
 				while (_iterProcess != NULL){
+
 					// Find the BARRIER from the corresponding queue
+					// TODO: find the right barrier
+					// Notice the case: Barrier 0 1 2
+					//                  Barrier 1 2 3
 					Event * _tmpEvent = findAnEventFromQueue(queueArr[_iterProcess -> num], BARRIER);
 					if (_tmpEvent == NULL){
-						// Read file until Barrier is read
+						// Read file until the Barrier is read
 						do{
 							assert(readOneLine(_buffer, pFile[_iterProcess -> num]));
 							DEBUG_PRINT("    Readline file: %d, contain: %s", _iterProcess -> num, _buffer);
@@ -416,13 +444,20 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 					}
 					assert(_tmpEvent != NULL);
 
-					// Add Indexs to index queue to find the remain barriers
-					if (_iterProcess-> num != aCurrentProcess && isProcessListEmpty(_tmpEvent -> checkProcessList)){
-						pushToIndexQueue(indexQueue, aCurrentProcess, _iterProcess -> num, BARRIER, NONCOMM_BARRIER_IS_PROCESSED);
+					// Just create the duty in the indexQueue for the first in group
+					if (firstBarrierInGroup){
+						// Add Indexs to index queue to find the remain barriers
+						if(_iterProcess -> num != aCurrentProcess){
+							pushToIndexQueue(indexQueue, aCurrentProcess, _iterProcess -> num, \
+								BARRIER, NBARRIER_IS_PROCESSED, nextPriority);
+						}
+						// Refind the barrier group to push they to the indexQueue
+						pushToIndexQueue(indexQueue, aCurrentProcess, _iterProcess -> num, \
+								BARRIER, PUSH_NBARRIER_TO_DETECTQ, nextPriority + 1);
 					}
 
 
-					// Add this Barrier process to the checklist of other Barrier processes
+					// Add this Barrier process to the checkProcessList of other Barrier processes
 					Process * _toAddProcess = initProcess(aCurrentProcess);
 					insertProcess2ProcessList(_tmpEvent -> checkProcessList, _toAddProcess);
 
@@ -438,8 +473,6 @@ int processTheFirstEventFromQueue(Queue ** aQueue, int aCurrentProcess){
 					_iterProcess = _iterProcess -> next;
 				}
 			}
-
-
 		}
 		break;
 	}
