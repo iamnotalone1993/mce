@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 	sharedBuffer = myrank;
 	n = 1;
-	MPI_Win_create(&sharedBuffer, n, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
+	MPI_Win_create(&sharedBuffer, n * sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
 
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Win_fence(0, win);

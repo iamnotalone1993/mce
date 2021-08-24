@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 	const int ranks[3] = {0, 1, 2};
 
 	sharedBuffer = rank;
-	MPI_Win_create(&sharedBuffer, 1, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
+	MPI_Win_create(&sharedBuffer, sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
 
 	MPI_Win_fence(0, win);
 	if (rank == 0)

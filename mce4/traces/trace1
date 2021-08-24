@@ -1,16 +1,16 @@
-Create	0xbfcafb5c	1	4
+Create	0x7ffff2ff8268
 Fence
-Get	0xbfcafb60	1	2	0	1
-Load	0xbfcafb60
+Get	0x7ffff2ff826c	2
+Load	0x7ffff2ff826c
 Fence
 Lock
-Store	0xbfcafb60
-Put	0xbfcafb60	1	0	0	1
+Store	0x7ffff2ff826c
+Put	0x7ffff2ff826c	0
 Unlock
 Post	0
-Store	0xbfcafb5c
+Store	0x7ffff2ff8268
 Wait
 Lock
-Store	0xbfcafb60
-Put	0xbfcafb60	1	0	0	1
+Store	0x7ffff2ff826c
+Put	0x7ffff2ff826c	0
 Unlock

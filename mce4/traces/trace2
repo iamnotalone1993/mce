@@ -1,9 +1,9 @@
-Create	0xbff6856c	1	4
+Create	0x7fff67f00e28
 Fence
-Store	0xbff68570
-Put	0xbff68570	1	0	0	1
+Store	0x7fff67f00e2c
+Put	0x7fff67f00e2c	0
 Fence
 Lock
-Store	0xbff68570
-Put	0xbff68570	1	1	0	1
+Store	0x7fff67f00e2c
+Put	0x7fff67f00e2c	1
 Unlock

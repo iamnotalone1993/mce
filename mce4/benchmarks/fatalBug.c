@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 
 	localBuffer = rank;
 	sharedBuffer = rank;
-	MPI_Win_create(&sharedBuffer, 1, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
+	MPI_Win_create(&sharedBuffer, sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
 	
 	if (rank == 0)
 	{

@@ -1,16 +1,16 @@
-Create	0xbfe6cc2c	1	4
+Create	0x7ffe19444458
 Fence
-Get	0xbfe6cc30	1	1	0	1
+Get	0x7ffe1944445c	1
 Fence
 Lock
-Store	0xbfe6cc30
-Put	0xbfe6cc30	1	1	0	1
+Store	0x7ffe1944445c
+Put	0x7ffe1944445c	1
 Unlock
 Start	1
-Get	0xbfe6cc30	1	1	0	1
-Store	0xbfe6cc2c
+Get	0x7ffe1944445c	1
+Store	0x7ffe19444458
 Complete
 Lock
-Store	0xbfe6cc30
-Put	0xbfe6cc30	1	1	0	1
+Store	0x7ffe1944445c
+Put	0x7ffe1944445c	1
 Unlock
